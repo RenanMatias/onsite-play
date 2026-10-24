@@ -1,0 +1,150 @@
+{
+  "ONSITE": {
+    "AC": "CA",
+    "DC": "CD",
+    "Settings": {
+      "Enabled": {
+        "Name": "Ativar Onsite Play",
+        "Hint": "Substitui as rolagens automáticas de ataque e dano dos personagens jogadores por um fluxo guiado, no qual o Mestre digita os resultados dos dados físicos."
+      },
+      "RemoveDefeated": {
+        "Name": "Remover derrotados do combate",
+        "Hint": "Quando ativado, um alvo que chega a 0 PV é marcado como derrotado e depois removido da ordem de iniciativa. Quando desativado, ele é apenas marcado como derrotado."
+      },
+      "Visibility": {
+        "Name": "Visibilidade do resumo",
+        "Hint": "Quem pode ver o cartão de resumo publicado no chat após cada ação.",
+        "Public": "Público",
+        "GM": "Somente o Mestre",
+        "GMOwner": "Mestre e donos do ator"
+      },
+      "ShowAC": {
+        "Name": "Mostrar CA do alvo na janela",
+        "Hint": "Mostra a Classe de Armadura de cada alvo na janela de ataque (somente o Mestre vê a janela)."
+      },
+      "TrackAmmunition": {
+        "Name": "Controlar munição",
+        "Hint": "Bloqueia ataques com armas à distância sem munição e gasta uma munição (ou uma arma arremessada) por ataque. Espaços de magia e usos de itens são sempre verificados pelo dnd5e."
+      },
+      "NpcOptIn": {
+        "Name": "Permitir PdMs habilitados",
+        "Hint": "Usa o fluxo guiado também para atores que não são personagens e foram habilitados com game.modules.get(\"onsite-play\").api.setOptIn(actor, true)."
+      }
+    },
+    "Buttons": {
+      "Continue": "Continuar",
+      "Cancel": "Cancelar",
+      "Resolve": "Resolver",
+      "Apply": "Aplicar",
+      "Caster": "Conjurador"
+    },
+    "Targets": {
+      "Title": "Selecionar alvos",
+      "Content": "Nenhum token está marcado como alvo. Marque um ou mais tokens no mapa (passe o mouse e pressione T) e clique em Continuar."
+    },
+    "Attack": {
+      "Title": "Ataque: {item}",
+      "Mode": "Modo de ataque",
+      "Hint": "Digite o total final do ataque (d20 + todos os modificadores) rolado na mesa. Deixe em branco para pular um alvo.",
+      "Total": "Total",
+      "Normal": "Normal",
+      "Nat20": "20 natural (acerto crítico)",
+      "Nat1": "1 natural (erro automático)",
+      "TotalCover": "Cobertura total",
+      "NoHP": "Sem pontos de vida"
+    },
+    "Ammo": {
+      "Label": "Munição",
+      "None": "{item} não tem munição. Adicione munição ao personagem antes de atacar.",
+      "NoThrown": "Não há mais {item} para arremessar.",
+      "NotEnough": "{item} insuficiente: {needed} necessário(s), {available} disponível(is). Nada foi aplicado.",
+      "Spent": "{name}: {from} → {to}"
+    },
+    "Damage": {
+      "Title": "Dano: {item}",
+      "Hint": "Digite o dano total rolado na mesa para cada alvo, um número por tipo de dano.",
+      "Critical": "Acerto crítico",
+      "Ignore": "Ignorar resistências/imunidades",
+      "Untyped": "Sem tipo",
+      "Required": "Informe o dano rolado (pelo menos 1)."
+    },
+    "Save": {
+      "Title": "Testes de resistência: {item}",
+      "DamageHeader": "Dano (rolado uma vez para todos os alvos)",
+      "OnSave": {
+        "half": "Em um sucesso: metade do dano",
+        "none": "Em um sucesso: nenhum dano",
+        "full": "Em um sucesso: dano total"
+      },
+      "Fail": "Falha",
+      "Pass": "Sucesso",
+      "Total": "Total",
+      "Roll": "Rolar por mim",
+      "RollHint": "Rola o teste de resistência deste alvo no Foundry.",
+      "AllFail": "Todos falham",
+      "AllPass": "Todos passam"
+    },
+    "Chain": {
+      "Title": "Continuar com o teste de resistência?",
+      "Content": "{count} alvo(s) foram atingidos. Resolver também <strong>{name}</strong> para eles?"
+    },
+    "Result": {
+      "hit": "ACERTO",
+      "crit": "ACERTO CRÍTICO",
+      "miss": "ERRO",
+      "pass": "SUCESSO",
+      "fail": "FALHA"
+    },
+    "Summary": {
+      "AttackVs": "{total} contra CA {ac}",
+      "AttackTotal": "{total}",
+      "Nat20": "20 natural",
+      "Nat1": "1 natural",
+      "Missed": "{attacker} errou {target}.",
+      "Skipped": "pulado",
+      "SaveVs": "resistência de {ability} {total} contra CD {dc}",
+      "SaveManual": "resistência de {ability}",
+      "NoSaveOutcome": "sem resultado de resistência, pulado",
+      "Damage": "{damage} de dano",
+      "Halved": "(metade)",
+      "Applied": "({amount} aplicado)",
+      "NoDamage": "nenhum dano",
+      "NoHP": "sem pontos de vida, nada aplicado",
+      "HP": "PV {from} → {to}",
+      "AlreadyDown": "já estava com 0 PV",
+      "Defeated": "derrotado",
+      "Removed": "derrotado, removido do combate",
+      "Fallen": "{target} caiu.",
+      "Unconscious": "{target} cai inconsciente.",
+      "Healing": "{healing}",
+      "TempHP": "+{amount} PV temporários",
+      "Revived": "{target} está de pé novamente."
+    },
+    "Undo": {
+      "Button": "Desfazer",
+      "Title": "Desfazer esta ação?",
+      "Content": "Restaura os PV de todos os alvos afetados, remove as condições adicionadas e devolve ao combate os combatentes removidos.",
+      "Done": "Desfeito",
+      "Success": "Ação desfeita.",
+      "Missing": "Não foi possível restaurar: {names}",
+      "Failed": "Falha ao desfazer. Veja o console (F12) para detalhes."
+    },
+    "Warn": {
+      "NoGM": "Onsite Play: nenhum Mestre está conectado.",
+      "QueryFailed": "Onsite Play: não foi possível contatar o Mestre.",
+      "FlowError": "Onsite Play: algo deu errado. Veja o console (F12) para detalhes.",
+      "NoTargets": "Nenhum token está marcado como alvo.",
+      "NoActorTargets": "Nenhum dos tokens marcados tem um ator.",
+      "NoDamageParts": "Esta atividade não tem dano para aplicar.",
+      "NoHealingParts": "Esta atividade não tem cura para aplicar."
+    },
+    "Info": {
+      "SentToGM": "Enviado ao Mestre para resolver."
+    },
+    "Heal": {
+      "Title": "Cura: {item}",
+      "Hint": "Digite a cura rolada na mesa para cada alvo.",
+      "Required": "Informe a cura rolada (pelo menos 1)."
+    }
+  }
+}

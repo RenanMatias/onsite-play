@@ -1,0 +1,68 @@
+<div class="onsite-dialog">
+  <div class="onsite-save-header">
+    <label class="onsite-dc">
+      {{localize "ONSITE.DC"}}
+      <input type="number" name="dc" value="{{dc}}" step="1">
+    </label>
+    {{#unless multipleAbilities}}<span class="onsite-tag">{{abilityLabel}}</span>{{/unless}}
+    {{#if hasDamage}}<span class="onsite-hint">{{onSaveLabel}}</span>{{/if}}
+  </div>
+
+  {{#if hasDamage}}
+  <fieldset class="onsite-target-block" data-onsite-damage-group>
+    <legend>{{localize "ONSITE.Save.DamageHeader"}}</legend>
+    {{#each damage}}
+    <div class="onsite-part">
+      <input type="number" name="{{valueName}}" min="0" step="1" data-onsite-damage {{#if @first}}autofocus{{/if}}>
+      {{#if multiple}}
+      <select name="{{typeName}}">{{selectOptions choices selected=defaultType}}</select>
+      {{else}}
+      <input type="hidden" name="{{typeName}}" value="{{defaultType}}">
+      <span class="onsite-type">{{typeLabel}}</span>
+      {{/if}}
+      <span class="onsite-formula">{{formula}}</span>
+    </div>
+    {{/each}}
+    <p class="onsite-error">{{localize "ONSITE.Damage.Required"}}</p>
+  </fieldset>
+  {{/if}}
+
+  <div class="onsite-bulk">
+    <button type="button" data-onsite-all="fail"><i class="fa-solid fa-xmark"></i> {{localize "ONSITE.Save.AllFail"}}</button>
+    <button type="button" data-onsite-all="pass"><i class="fa-solid fa-check"></i> {{localize "ONSITE.Save.AllPass"}}</button>
+  </div>
+
+  <ul class="onsite-targets">
+    {{#each rows}}
+    <li class="onsite-target">
+      <img class="onsite-portrait" src="{{img}}" alt="">
+      <div class="onsite-details">
+        <span class="onsite-name">{{name}}</span>
+        {{#if ../multipleAbilities}}
+        <select name="{{abilityName}}">{{selectOptions ../abilityChoices selected=../defaultAbility}}</select>
+        {{else}}
+        <input type="hidden" name="{{abilityName}}" value="{{../defaultAbility}}">
+        {{/if}}
+        {{#unless hasHP}}<span class="onsite-tag warning">{{localize "ONSITE.Attack.NoHP"}}</span>{{/unless}}
+      </div>
+      <div class="onsite-inputs">
+        <div class="onsite-radios">
+          <label><input type="radio" name="{{outcomeName}}" value="fail"> {{localize "ONSITE.Save.Fail"}}</label>
+          <label><input type="radio" name="{{outcomeName}}" value="pass"> {{localize "ONSITE.Save.Pass"}}</label>
+          <label>
+            <input type="radio" name="{{outcomeName}}" value="total"> {{localize "ONSITE.Save.Total"}}
+          </label>
+          <input type="number" name="{{totalName}}" step="1" data-onsite-total="{{index}}"
+                 aria-label="{{localize 'ONSITE.Save.Total'}}">
+          <button type="button" data-onsite-roll="{{index}}" data-tooltip="{{localize 'ONSITE.Save.RollHint'}}">
+            <i class="fa-solid fa-dice-d20"></i> {{localize "ONSITE.Save.Roll"}}
+          </button>
+        </div>
+        <label class="onsite-checkbox">
+          <input type="checkbox" name="{{ignoreName}}"> {{localize "ONSITE.Damage.Ignore"}}
+        </label>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+</div>

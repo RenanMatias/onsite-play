@@ -1,0 +1,25 @@
+<div class="onsite-summary">
+  <header class="onsite-summary-header">
+    <img src="{{itemImg}}" alt="">
+    <div>
+      <strong>{{actorName}}</strong> — {{itemName}}
+      {{#if activityName}}<span class="onsite-activity">({{activityName}})</span>{{/if}}
+    </div>
+  </header>
+  <ul class="onsite-summary-lines">
+    {{#each entries}}
+    <li class="onsite-line result-{{result}}">
+      <div>
+        <span class="onsite-arrow">→</span> <strong>{{name}}</strong>{{#if detail}}: {{detail}}{{/if}}
+      </div>
+      {{#each notes}}<div class="onsite-note">{{this}}</div>{{/each}}
+    </li>
+    {{/each}}
+  </ul>
+  {{#each resources}}<div class="onsite-resource"><i class="fa-solid fa-boxes-stacked"></i> {{this}}</div>{{/each}}
+  {{#if canUndo}}
+  <button type="button" class="onsite-undo" data-onsite-action="undo">
+    <i class="fa-solid fa-rotate-left"></i> {{localize "ONSITE.Undo.Button"}}
+  </button>
+  {{/if}}
+</div>

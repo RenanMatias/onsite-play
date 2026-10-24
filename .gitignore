@@ -1,0 +1,9 @@
+# Foundry runtime lock file
+*.lock
+
+# OS / editor files
+.DS_Store
+.vscode/
+
+# Build output
+module.zip
