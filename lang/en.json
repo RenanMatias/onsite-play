@@ -1,0 +1,150 @@
+{
+  "ONSITE": {
+    "AC": "AC",
+    "DC": "DC",
+    "Settings": {
+      "Enabled": {
+        "Name": "Enable Onsite Play",
+        "Hint": "Replace automatic attack and damage rolls of player characters with a guided flow where the GM types the physical dice results."
+      },
+      "RemoveDefeated": {
+        "Name": "Remove defeated from combat",
+        "Hint": "When enabled, a target that drops to 0 HP is marked defeated and then removed from the turn order. When disabled, it is only marked defeated."
+      },
+      "Visibility": {
+        "Name": "Summary visibility",
+        "Hint": "Who can see the summary chat card posted after each action.",
+        "Public": "Public",
+        "GM": "GM only",
+        "GMOwner": "GM and actor owners"
+      },
+      "ShowAC": {
+        "Name": "Show target AC in dialog",
+        "Hint": "Show each target's Armor Class in the attack dialog (only the GM sees the dialog)."
+      },
+      "TrackAmmunition": {
+        "Name": "Track ammunition",
+        "Hint": "Block attacks with ranged weapons that have no ammunition, and spend one piece of ammunition (or one thrown weapon) per attack. Spell slots and item uses are always checked by dnd5e."
+      },
+      "NpcOptIn": {
+        "Name": "Allow opted-in NPCs",
+        "Hint": "Also use the guided flow for non-character actors that were opted in with game.modules.get(\"onsite-play\").api.setOptIn(actor, true)."
+      }
+    },
+    "Buttons": {
+      "Continue": "Continue",
+      "Cancel": "Cancel",
+      "Resolve": "Resolve",
+      "Apply": "Apply",
+      "Caster": "Caster"
+    },
+    "Targets": {
+      "Title": "Select targets",
+      "Content": "No tokens are targeted. Target one or more tokens on the canvas (hover and press T), then press Continue."
+    },
+    "Attack": {
+      "Title": "Attack: {item}",
+      "Mode": "Attack mode",
+      "Hint": "Type the final attack total (d20 + all modifiers) rolled at the table. Leave blank to skip a target.",
+      "Total": "Total",
+      "Normal": "Normal",
+      "Nat20": "Natural 20 (critical hit)",
+      "Nat1": "Natural 1 (automatic miss)",
+      "TotalCover": "Total cover",
+      "NoHP": "No hit points"
+    },
+    "Ammo": {
+      "Label": "Ammunition",
+      "None": "{item} has no ammunition. Add ammunition to the character before attacking.",
+      "NoThrown": "No {item} left to throw.",
+      "NotEnough": "Not enough {item}: {needed} needed, {available} available. Nothing was applied.",
+      "Spent": "{name}: {from} → {to}"
+    },
+    "Damage": {
+      "Title": "Damage: {item}",
+      "Hint": "Type the total damage rolled at the table for each target, one number per damage type.",
+      "Critical": "Critical hit",
+      "Ignore": "Ignore resistances/immunities",
+      "Untyped": "Untyped",
+      "Required": "Enter the damage rolled (at least 1)."
+    },
+    "Save": {
+      "Title": "Saving throws: {item}",
+      "DamageHeader": "Damage (rolled once for all targets)",
+      "OnSave": {
+        "half": "On a successful save: half damage",
+        "none": "On a successful save: no damage",
+        "full": "On a successful save: full damage"
+      },
+      "Fail": "Fail",
+      "Pass": "Pass",
+      "Total": "Total",
+      "Roll": "Roll for me",
+      "RollHint": "Roll this target's saving throw in Foundry.",
+      "AllFail": "All fail",
+      "AllPass": "All pass"
+    },
+    "Chain": {
+      "Title": "Continue with saving throw?",
+      "Content": "{count} target(s) were hit. Also resolve <strong>{name}</strong> for them?"
+    },
+    "Result": {
+      "hit": "HIT",
+      "crit": "CRITICAL HIT",
+      "miss": "MISS",
+      "pass": "SAVED",
+      "fail": "FAILED"
+    },
+    "Summary": {
+      "AttackVs": "{total} vs AC {ac}",
+      "AttackTotal": "{total}",
+      "Nat20": "natural 20",
+      "Nat1": "natural 1",
+      "Missed": "{attacker} missed {target}.",
+      "Skipped": "skipped",
+      "SaveVs": "{ability} save {total} vs DC {dc}",
+      "SaveManual": "{ability} save",
+      "NoSaveOutcome": "no save result, skipped",
+      "Damage": "{damage} damage",
+      "Halved": "(halved)",
+      "Applied": "({amount} applied)",
+      "NoDamage": "no damage",
+      "NoHP": "no hit points, nothing applied",
+      "HP": "HP {from} → {to}",
+      "AlreadyDown": "already at 0 HP",
+      "Defeated": "defeated",
+      "Removed": "defeated, removed from combat",
+      "Fallen": "{target} has fallen.",
+      "Unconscious": "{target} falls unconscious.",
+      "Healing": "{healing}",
+      "TempHP": "+{amount} temporary HP",
+      "Revived": "{target} is back on their feet."
+    },
+    "Undo": {
+      "Button": "Undo",
+      "Title": "Undo this action?",
+      "Content": "Restore the HP of every affected target, remove the statuses added, and put removed combatants back into combat.",
+      "Done": "Undone",
+      "Success": "Action undone.",
+      "Missing": "Could not restore: {names}",
+      "Failed": "Undo failed. See the console (F12) for details."
+    },
+    "Warn": {
+      "NoGM": "Onsite Play: no GM is connected.",
+      "QueryFailed": "Onsite Play: could not reach the GM.",
+      "FlowError": "Onsite Play: something went wrong. See the console (F12) for details.",
+      "NoTargets": "No tokens are targeted.",
+      "NoActorTargets": "None of the targeted tokens has an actor.",
+      "NoDamageParts": "This activity has no damage to apply.",
+      "NoHealingParts": "This activity has no healing to apply."
+    },
+    "Info": {
+      "SentToGM": "Sent to the GM to resolve."
+    },
+    "Heal": {
+      "Title": "Healing: {item}",
+      "Hint": "Type the healing rolled at the table for each target.",
+      "Required": "Enter the healing rolled (at least 1)."
+    }
+  }
+}

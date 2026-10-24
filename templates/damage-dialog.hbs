@@ -1,0 +1,32 @@
+<div class="onsite-dialog">
+  <p class="onsite-hint">{{hint}}</p>
+  {{#each rows}}
+  <fieldset class="onsite-target-block" data-onsite-damage-group>
+    <legend>
+      <img class="onsite-portrait small" src="{{img}}" alt="">
+      <span class="onsite-name">{{name}}</span>
+      {{#if critical}}<span class="onsite-tag crit">{{localize "ONSITE.Damage.Critical"}}</span>{{/if}}
+      {{#unless hasHP}}<span class="onsite-tag warning">{{localize "ONSITE.Attack.NoHP"}}</span>{{/unless}}
+    </legend>
+    {{#each parts}}
+    <div class="onsite-part">
+      <input type="number" name="{{valueName}}" min="0" step="1" data-onsite-damage
+             {{#if autofocus}}autofocus{{/if}}>
+      {{#if multiple}}
+      <select name="{{typeName}}">{{selectOptions choices selected=defaultType}}</select>
+      {{else}}
+      <input type="hidden" name="{{typeName}}" value="{{defaultType}}">
+      <span class="onsite-type">{{typeLabel}}</span>
+      {{/if}}
+      <span class="onsite-formula">{{formula}}</span>
+    </div>
+    {{/each}}
+    <p class="onsite-error">{{../required}}</p>
+    {{#unless ../healing}}
+    <label class="onsite-checkbox">
+      <input type="checkbox" name="{{ignoreName}}"> {{localize "ONSITE.Damage.Ignore"}}
+    </label>
+    {{/unless}}
+  </fieldset>
+  {{/each}}
+</div>
