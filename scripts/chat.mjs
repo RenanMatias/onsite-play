@@ -78,6 +78,40 @@ export function onRenderChatMessage(message, html) {
 }
 
 /**
+ * dnd5e.renderChatMessage hook (fires after dnd5e's own card changes): show a check or save rolled at the table as
+ * a summary line instead of the dice, e.g. "→ Aria: 14 (natural 20) vs DC 15, SAVED". The message itself stays a
+ * normal dnd5e roll message, so death save outcomes and request cards keep working.
+ * @param {ChatMessage} message
+ * @param {HTMLElement} html
+ */
+export function onRenderCheckMessage(message, html) {
+  if ( !message.flags?.[MODULE_ID]?.check || !message.isContentVisible ) return;
+  const name = foundry.utils.escapeHTML(message.alias);
+  html.querySelectorAll(".dice-roll").forEach((el, i) => {
+    const roll = message.rolls[i];
+    if ( !roll ) return;
+    const natLabel = roll.isCritical ? loc("Summary.Nat20") : roll.isFumble ? loc("Summary.Nat1") : null;
+    const total = natLabel ? `${roll.total} (${natLabel})` : `${roll.total}`;
+    const target = roll.options.target;
+    const segments = [Number.isNumeric(target) ? loc("Summary.CheckVs", { total, dc: target }) : total];
+    let result = "";
+    if ( Number.isNumeric(target) ) {
+      result = roll.isSuccess ? "pass" : "fail";
+      segments.push(loc(message.type === "save" ? `Result.${result}` : `Result.${result === "pass" ? "success" : "failure"}`));
+    }
+    const summary = document.createElement("div");
+    summary.classList.add("onsite-summary");
+    summary.innerHTML = `
+      <ul class="onsite-summary-lines">
+        <li class="onsite-line result-${result}">
+          <div><span class="onsite-arrow">→</span> <strong>${name}</strong>: ${segments.join(", ")}</div>
+        </li>
+      </ul>`;
+    el.replaceWith(summary);
+  });
+}
+
+/**
  * Restore everything recorded on a summary message and mark it as undone.
  * @param {ChatMessage} message
  */

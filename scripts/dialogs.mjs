@@ -338,8 +338,10 @@ function bindSaveDialog(root, targets, defaultAbility) {
       const dc = toNumber(root.querySelector("[name='dc']")?.value);
       button.disabled = true;
       try {
-        // Normal dnd5e save roll for the target (posts its own chat card).
-        const rolls = await target.actor.rollSavingThrow({ ability, target: dc ?? undefined });
+        // Normal dnd5e save roll for the target (posts its own chat card), even for a player character.
+        const rolls = await target.actor.rollSavingThrow({
+          ability, target: dc ?? undefined, [MODULE_ID]: { digital: true }
+        });
         const total = rolls?.[0]?.total;
         if ( Number.isFinite(total) ) {
           const input = root.querySelector(`[name="rows.${index}.total"]`);
@@ -353,6 +355,83 @@ function bindSaveDialog(root, targets, defaultAbility) {
       }
     });
   }
+}
+
+/**
+ * Ask for the initiative total rolled at the table for each actor.
+ * @param {{actor: Actor, name: string, img: string}[]} rows
+ * @returns {Promise<(number|null)[]|null>}  One total per row (null when left blank), or null if canceled.
+ */
+export async function promptInitiative(rows) {
+  const content = await renderTemplate(TEMPLATES.initiative, {
+    rows: rows.map((row, i) => ({
+      name: row.name,
+      img: row.img,
+      bonus: dnd5e.utils.formatNumber(row.actor.system.attributes?.init?.total ?? 0, { signDisplay: "always" }),
+      first: i === 0,
+      totalName: `rows.${i}.total`
+    }))
+  });
+  const data = await waitForm({
+    title: loc("Initiative.Title"),
+    icon: "fa-solid fa-dice-d20",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 420,
+    validate: form => Array.from(form.querySelectorAll("input[type='number']")).some(i => toNumber(i.value) !== null)
+  });
+  if ( !data ) return null;
+  return rows.map((row, i) => {
+    const total = toNumber(data.rows?.[i]?.total);
+    return total === null ? null : Math.floor(total);
+  });
+}
+
+/**
+ * Ask for the result of an ability check, skill / tool check or saving throw rolled at the table.
+ * @param {Actor} actor
+ * @param {object} request
+ * @param {string} request.label          What is rolled, e.g. "Dexterity Saving Throw".
+ * @param {number|null} request.target    DC, when known.
+ * @param {string[]} request.formulas     One formula per roll (almost always one).
+ * @returns {Promise<{total: number|null, nat: "none"|"nat20"|"nat1"}[]|null>}
+ *   One result per roll (the total may be blank for a natural 20 / 1), or null if canceled.
+ */
+export async function promptD20Test(actor, { label, target, formulas }) {
+  const content = await renderTemplate(TEMPLATES.d20Test, {
+    hint: loc("Check.Hint"),
+    rows: formulas.map((formula, i) => ({
+      label,
+      img: actor.img,
+      formula,
+      target,
+      first: i === 0,
+      totalName: `rows.${i}.total`,
+      natName: `rows.${i}.nat`
+    }))
+  });
+  const data = await waitForm({
+    title: actor.name,
+    icon: "fa-solid fa-dice-d20",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 480,
+    // Each roll needs a total, unless Natural 20 / Natural 1 is ticked.
+    validate: form => formulas.every((formula, i) => {
+      const total = form.querySelector(`[name="rows.${i}.total"]`)?.value;
+      const nat = form.querySelector(`[name="rows.${i}.nat"]:checked`)?.value;
+      return (toNumber(total) !== null) || ["nat20", "nat1"].includes(nat);
+    })
+  });
+  if ( !data ) return null;
+  return formulas.map((formula, i) => {
+    const row = data.rows?.[i] ?? {};
+    const total = toNumber(row.total);
+    return {
+      total: total === null ? null : Math.floor(total),
+      nat: ["nat20", "nat1"].includes(row.nat) ? row.nat : "none"
+    };
+  });
 }
 
 /**

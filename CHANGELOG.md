@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Manual initiative: rolling a player character's initiative (combat tracker d20 button, character sheet, or **Roll All**) no longer opens the normal / advantage / disadvantage dialog. The GM types the total rolled at the table instead. **Roll All** asks for every player character in one dialog; NPCs still roll automatically.
+- New setting **Manual initiative** (on by default).
+- Manual checks and saves: ability checks, skill and tool checks, saving throws, death saving throws and concentration saves of player characters ask the GM for the total rolled at the table (with Natural 20 / Natural 1), instead of opening dnd5e's roll dialog. The roll card shows an Onsite Play summary line (total, natural 20/1, DC, result) instead of the dice, and dnd5e still applies the result.
+- New setting **Manual checks and saves** (on by default).
+
 ## 1.0.0
 
 First public release.

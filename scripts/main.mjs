@@ -6,6 +6,8 @@ import { MODULE_ID, TEMPLATES } from "./constants.mjs";
 import { registerSettings } from "./settings.mjs";
 import { registerHooks } from "./hooks.mjs";
 import { handleFlowQuery } from "./flows.mjs";
+import { registerInitiative } from "./initiative.mjs";
+import { registerChecks } from "./checks.mjs";
 
 Hooks.once("init", () => {
   registerSettings();
@@ -14,6 +16,8 @@ Hooks.once("init", () => {
   CONFIG.queries[`${MODULE_ID}.runFlow`] = handleFlowQuery;
 
   registerHooks();
+  registerInitiative();
+  registerChecks();
   foundry.applications.handlebars.loadTemplates(Object.values(TEMPLATES));
 
   // Small public API (also used for the optional NPC opt-in).

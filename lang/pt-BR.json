@@ -26,6 +26,14 @@
         "Name": "Controlar munição",
         "Hint": "Bloqueia ataques com armas à distância sem munição e gasta uma munição (ou uma arma arremessada) por ataque. Espaços de magia e usos de itens são sempre verificados pelo dnd5e."
       },
+      "ManualInitiative": {
+        "Name": "Iniciativa manual",
+        "Hint": "Quando a iniciativa de um personagem jogador é rolada (rastreador de combate, ficha do personagem ou Rolar Todos), o Mestre digita o total rolado na mesa em vez de o Foundry rolar."
+      },
+      "ManualChecks": {
+        "Name": "Testes e salvaguardas manuais",
+        "Hint": "Testes de atributo, de perícia e de ferramenta, salvaguardas, salvaguardas contra a morte e de concentração dos personagens jogadores pedem ao Mestre o total rolado na mesa em vez de rolar no Foundry."
+      },
       "NpcOptIn": {
         "Name": "Permitir PdMs habilitados",
         "Hint": "Usa o fluxo guiado também para atores que não são personagens e foram habilitados com game.modules.get(\"onsite-play\").api.setOptIn(actor, true)."
@@ -93,7 +101,9 @@
       "crit": "ACERTO CRÍTICO",
       "miss": "ERRO",
       "pass": "SUCESSO",
-      "fail": "FALHA"
+      "fail": "FALHA",
+      "success": "SUCESSO",
+      "failure": "FALHA"
     },
     "Summary": {
       "AttackVs": "{total} contra CA {ac}",
@@ -102,6 +112,7 @@
       "Nat1": "1 natural",
       "Missed": "{attacker} errou {target}.",
       "Skipped": "pulado",
+      "CheckVs": "{total} contra CD {dc}",
       "SaveVs": "resistência de {ability} {total} contra CD {dc}",
       "SaveManual": "resistência de {ability}",
       "NoSaveOutcome": "sem resultado de resistência, pulado",
@@ -145,6 +156,18 @@
       "Title": "Cura: {item}",
       "Hint": "Digite a cura rolada na mesa para cada alvo.",
       "Required": "Informe a cura rolada (pelo menos 1)."
+    },
+    "Initiative": {
+      "Title": "Iniciativa",
+      "Hint": "Digite o total final de iniciativa (d20 + todos os modificadores) rolado na mesa. Deixe em branco para pular um combatente.",
+      "Total": "Total",
+      "Bonus": "Iniciativa {bonus}"
+    },
+    "Check": {
+      "Hint": "Digite o total final (d20 + todos os modificadores) rolado na mesa. Em um 20 natural ou 1 natural, basta marcar: o total é opcional.",
+      "Total": "Total",
+      "Nat20": "20 natural",
+      "Nat1": "1 natural"
     }
   }
 }

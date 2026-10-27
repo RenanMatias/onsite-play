@@ -14,8 +14,19 @@
 import { MODULE_ID, FLOW_ACTIVITY_TYPES } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { requestFlow } from "./flows.mjs";
-import { onRenderChatMessage } from "./chat.mjs";
+import { onRenderChatMessage, onRenderCheckMessage } from "./chat.mjs";
 import { checkAttackResources } from "./ammunition.mjs";
+
+/**
+ * Is this actor handled by the module: a player character, or an NPC opted in through the API?
+ * @param {Actor} actor
+ * @returns {boolean}
+ */
+export function isGuidedActor(actor) {
+  if ( !actor ) return false;
+  if ( actor.type === "character" ) return true;
+  return getSetting("npcOptIn") && (actor.getFlag(MODULE_ID, "optIn") === true);
+}
 
 /**
  * Should this activity use the guided flow instead of dnd5e's automatic rolls?
@@ -25,12 +36,7 @@ import { checkAttackResources } from "./ammunition.mjs";
 export function shouldIntercept(activity) {
   if ( !getSetting("enabled") ) return false;
   if ( !activity || !FLOW_ACTIVITY_TYPES.has(activity.type) ) return false;
-  const actor = activity.actor;
-  if ( !actor ) return false;
-
-  const isPC = actor.type === "character";
-  const optedIn = getSetting("npcOptIn") && (actor.getFlag(MODULE_ID, "optIn") === true);
-  if ( !isPC && !optedIn ) return false;
+  if ( !isGuidedActor(activity.actor) ) return false;
 
   // Heals need a healing formula; saves and plain damage need damage. Otherwise keep dnd5e defaults.
   if ( activity.type === "heal" ) {
@@ -48,6 +54,7 @@ export function registerHooks() {
   Hooks.on("dnd5e.preRollAttackV2", onPreRollAttack);
   Hooks.on("dnd5e.preRollDamageV2", onPreRollDamage);
   Hooks.on("renderChatMessageHTML", onRenderChatMessage);
+  Hooks.on("dnd5e.renderChatMessage", onRenderCheckMessage);
 }
 
 /* -------------------------------------------- */

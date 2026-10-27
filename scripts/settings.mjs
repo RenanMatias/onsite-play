@@ -55,6 +55,24 @@ export function registerSettings() {
     default: true
   });
 
+  game.settings.register(MODULE_ID, "manualInitiative", {
+    name: "ONSITE.Settings.ManualInitiative.Name",
+    hint: "ONSITE.Settings.ManualInitiative.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  game.settings.register(MODULE_ID, "manualChecks", {
+    name: "ONSITE.Settings.ManualChecks.Name",
+    hint: "ONSITE.Settings.ManualChecks.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
   game.settings.register(MODULE_ID, "npcOptIn", {
     name: "ONSITE.Settings.NpcOptIn.Name",
     hint: "ONSITE.Settings.NpcOptIn.Hint",

@@ -1,0 +1,24 @@
+<div class="onsite-dialog">
+  <p class="onsite-hint">{{hint}}</p>
+  <ul class="onsite-targets">
+    {{#each rows}}
+    <li class="onsite-target">
+      <img class="onsite-portrait" src="{{img}}" alt="">
+      <div class="onsite-details">
+        <span class="onsite-name">{{label}}</span>
+        <span class="onsite-tag">{{formula}}</span>
+        {{#if target}}<span class="onsite-tag">{{localize "ONSITE.DC"}} {{target}}</span>{{/if}}
+      </div>
+      <div class="onsite-inputs">
+        <input type="number" name="{{totalName}}" step="1" placeholder="{{localize 'ONSITE.Check.Total'}}"
+               aria-label="{{localize 'ONSITE.Check.Total'}}" {{#if first}}autofocus{{/if}}>
+        <div class="onsite-radios">
+          <label><input type="radio" name="{{natName}}" value="none" checked> {{localize "ONSITE.Attack.Normal"}}</label>
+          <label><input type="radio" name="{{natName}}" value="nat20"> {{localize "ONSITE.Check.Nat20"}}</label>
+          <label><input type="radio" name="{{natName}}" value="nat1"> {{localize "ONSITE.Check.Nat1"}}</label>
+        </div>
+      </div>
+    </li>
+    {{/each}}
+  </ul>
+</div>

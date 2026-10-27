@@ -18,7 +18,7 @@ Foundry's core "manual rolling" only asks for raw die faces. Onsite Play underst
 1. In Foundry, open **Add-on Modules → Install Module**.
 2. Paste this manifest URL into the **Manifest URL** field and click **Install**:
    ```
-   https://github.com/<github-user>/onsite-play/releases/latest/download/module.json
+   https://github.com/RenanMatias/onsite-play/releases/latest/download/module.json
    ```
 3. Enable **Onsite Play** in your world (**Game Settings → Manage Modules**).
 
@@ -69,6 +69,19 @@ Type the damage per target and apply it. No hit check.
 - **Player characters**: become **Unconscious** and stay in combat, so they can make death saving throws.
 - Works with dnd5e's own "auto-apply downed" setting without adding duplicate effects.
 
+### Initiative
+
+- Rolling a PC's initiative (the d20 button in the combat tracker, or the initiative on the character sheet) skips dnd5e's normal / advantage / disadvantage dialog. Type the **final initiative total** the player rolled at the table.
+- **Roll All** asks for every PC that hasn't rolled yet in a single dialog, while NPCs roll automatically as usual. Leave a PC blank to skip it.
+- dnd5e's Dexterity tiebreaker and fixed initiative score settings are respected.
+
+### Ability checks, skills, saving throws and death saves
+
+- When a PC makes an **ability check**, **skill** or **tool check**, **saving throw**, **death saving throw**, or **concentration save**, dnd5e's roll dialog is replaced. Type the **final total** rolled at the table, and tick **Natural 20** or **Natural 1** when the die shows it.
+- The roll card shows an Onsite Play summary line instead of the dice, for example **→ Aria: 14 vs DC 15, SAVED**.
+- dnd5e still applies the result: death save successes and failures (a natural 20 brings the character back with 1 HP, a natural 1 counts as two failures), concentration, and save or check request cards.
+- The **Roll for me** button in the saving throw flow always rolls in Foundry.
+
 ### Chat summary and Undo
 
 Every action posts one summary card, for example:
@@ -98,6 +111,8 @@ Spell slots, item uses, charges, and other consumption are checked by dnd5e **be
 | Summary visibility          | Public  | Who sees the summary card: public, GM only, or GM and the actor's owners. |
 | Show target AC in dialog    | On      | Show each target's AC in the attack dialog (only the GM sees the dialog). |
 | Track ammunition            | On      | Block ranged attacks without ammunition and spend ammunition per attack.  |
+| Manual initiative           | On      | The GM types PC initiative totals instead of Foundry rolling them.        |
+| Manual checks and saves     | On      | The GM types PC checks, saves, death saves and concentration totals.      |
 | Allow opted-in NPCs         | Off     | Also use the guided flow for specific non-character actors (see below).   |
 
 ### Using the flow for specific NPCs
@@ -130,7 +145,7 @@ English and Português (Brasil).
 
 ## Reporting issues
 
-Please open an issue at `https://github.com/<github-user>/onsite-play/issues` with your Foundry and dnd5e versions, the steps you took, and any errors from the browser console (F12; messages start with `onsite-play |`).
+Please open an issue at `https://github.com/RenanMatias/onsite-play/issues` with your Foundry and dnd5e versions, the steps you took, and any errors from the browser console (F12; messages start with `onsite-play |`).
 
 ## License
 

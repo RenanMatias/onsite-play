@@ -26,6 +26,14 @@
         "Name": "Track ammunition",
         "Hint": "Block attacks with ranged weapons that have no ammunition, and spend one piece of ammunition (or one thrown weapon) per attack. Spell slots and item uses are always checked by dnd5e."
       },
+      "ManualInitiative": {
+        "Name": "Manual initiative",
+        "Hint": "When initiative is rolled for a player character (combat tracker, character sheet, or Roll All), the GM types the total rolled at the table instead of Foundry rolling it."
+      },
+      "ManualChecks": {
+        "Name": "Manual checks and saves",
+        "Hint": "Ability checks, skill and tool checks, saving throws, death saves and concentration saves of player characters ask the GM for the total rolled at the table instead of rolling in Foundry."
+      },
       "NpcOptIn": {
         "Name": "Allow opted-in NPCs",
         "Hint": "Also use the guided flow for non-character actors that were opted in with game.modules.get(\"onsite-play\").api.setOptIn(actor, true)."
@@ -48,8 +56,8 @@
       "Hint": "Type the final attack total (d20 + all modifiers) rolled at the table. Leave blank to skip a target.",
       "Total": "Total",
       "Normal": "Normal",
-      "Nat20": "Natural 20 (critical hit)",
-      "Nat1": "Natural 1 (automatic miss)",
+      "Nat20": "Natural 20",
+      "Nat1": "Natural 1",
       "TotalCover": "Total cover",
       "NoHP": "No hit points"
     },
@@ -93,7 +101,9 @@
       "crit": "CRITICAL HIT",
       "miss": "MISS",
       "pass": "SAVED",
-      "fail": "FAILED"
+      "fail": "FAILED",
+      "success": "SUCCESS",
+      "failure": "FAILURE"
     },
     "Summary": {
       "AttackVs": "{total} vs AC {ac}",
@@ -102,6 +112,7 @@
       "Nat1": "natural 1",
       "Missed": "{attacker} missed {target}.",
       "Skipped": "skipped",
+      "CheckVs": "{total} vs DC {dc}",
       "SaveVs": "{ability} save {total} vs DC {dc}",
       "SaveManual": "{ability} save",
       "NoSaveOutcome": "no save result, skipped",
@@ -145,6 +156,18 @@
       "Title": "Healing: {item}",
       "Hint": "Type the healing rolled at the table for each target.",
       "Required": "Enter the healing rolled (at least 1)."
+    },
+    "Initiative": {
+      "Title": "Initiative",
+      "Hint": "Type the final initiative total (d20 + all modifiers) rolled at the table. Leave blank to skip a combatant.",
+      "Total": "Total",
+      "Bonus": "Initiative {bonus}"
+    },
+    "Check": {
+      "Hint": "Type the final total (d20 + all modifiers) rolled at the table. On a natural 20 or natural 1, ticking it is enough: the total is optional.",
+      "Total": "Total",
+      "Nat20": "Natural 20",
+      "Nat1": "Natural 1"
     }
   }
 }
