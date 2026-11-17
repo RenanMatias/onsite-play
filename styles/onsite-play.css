@@ -238,3 +238,6 @@
 .onsite-play .onsite-invalid input[data-onsite-damage] { outline: 1px solid var(--color-level-error, #c0392b); }
 
 .onsite-summary .result-heal { border-left-color: #27ae60; }
+
+.onsite-play input.onsite-out-of-range { outline: 1px solid var(--color-level-error, #c0392b); }
+.onsite-play .onsite-fixed { width: 5rem; text-align: center; font-weight: bold; }

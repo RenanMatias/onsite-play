@@ -18,7 +18,7 @@
 import { MODULE_ID, loc } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { promptGroupTest, promptLooseDamage } from "./dialogs.mjs";
-import { buildDamageParts } from "./damage.mjs";
+import { buildDamageParts, diceRange } from "./damage.mjs";
 import { buildActorTargetInfo, buildTargetInfo } from "./targets.mjs";
 import { applyAndDescribe, createEntry, healAndDescribe } from "./flows.mjs";
 import { describeD20Roll, postSummary } from "./chat.mjs";
@@ -274,7 +274,7 @@ async function runLooseDamage({ parts, tokenUuids }) {
     const damageParts = buildDamageParts(parts.map(part => ({
       parts: [part.formula],
       options: { type: part.types[0], types: part.types }
-    })));
+    }))).map(part => ({ ...part, dice: diceRange(part.formula) }));
     const tokens = tokenUuids.map(uuid => fromUuidSync(uuid)).filter(doc => doc?.documentName === "Token");
 
     let targets;

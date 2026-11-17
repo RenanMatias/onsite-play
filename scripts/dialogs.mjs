@@ -488,7 +488,9 @@ export async function promptGroupTest({ label, dc, actors, natural=true }) {
 /**
  * Ask for damage or healing rolled once for everyone (journal links), and, when `actors` is given, who is affected.
  * @param {object} request
- * @param {DamagePartInfo[]} request.parts
+ * The GM types the dice rolled for each part; its fixed modifier (`part.dice`, see diceRange) is added to it.
+ * A part without dice is applied as is.
+ * @param {(DamagePartInfo & {dice: {min: number, max: number, modifier: number}|null})[]} request.parts
  * @param {boolean} request.healing
  * @param {Actor[]|null} request.actors  Actors to choose from, or null when the recipients are already known.
  * @param {string[]} [request.recipients]  Names of the recipients already known (shown, not editable).
@@ -499,13 +501,39 @@ export async function promptLooseDamage({ parts, healing, actors, recipients=[] 
   const content = await renderTemplate(TEMPLATES.looseDamage, {
     healing,
     hint: loc(healing ? "Loose.HealingHint" : "Loose.DamageHint"),
-    required: loc(healing ? "Heal.Required" : "Damage.Required"),
-    parts: partFields(parts, "parts"),
+    required: loc("Loose.Required"),
+    parts: partFields(parts, "parts").map(part => ({
+      ...part,
+      fixed: part.dice?.max === 0,
+      min: part.dice?.max ? part.dice.min : 0,
+      max: part.dice?.max || null,
+      placeholder: part.dice?.max ? `${part.dice.min}–${part.dice.max}` : "",
+      fixedLabel: part.dice ? `= ${Math.max(0, part.dice.modifier)}` : ""
+    })),
     actors: actors?.map((actor, i) => ({ name: actor.name, img: actor.img, checkName: `actors.${i}` })) ?? null,
     recipients: recipients.join(", ")
   });
+  // At least one part with damage (a part without dice always counts), and every typed value within its dice range.
+  const validateParts = form => {
+    const group = form.querySelector("[data-onsite-damage-group]");
+    let some = parts.some(part => part.dice?.max === 0);
+    let inRange = true;
+    for ( const input of form.querySelectorAll("input[data-onsite-damage]") ) {
+      const value = toNumber(input.value);
+      if ( value === null ) continue;
+      const min = toNumber(input.min) ?? 0;
+      const max = toNumber(input.max);
+      const ok = (value >= Math.max(min, 1)) && ((max === null) || (value <= max));
+      input.classList.toggle("onsite-out-of-range", !ok);
+      inRange &&= ok;
+      some ||= ok;
+    }
+    const valid = some && inRange;
+    group?.classList.toggle("onsite-invalid", !valid);
+    return valid;
+  };
   const validate = form => {
-    let valid = validateDamageGroups(form);
+    let valid = validateParts(form);
     const group = form.querySelector("[data-onsite-recipients]");
     if ( group ) {
       const ok = !!group.querySelector("input[type='checkbox']:checked");
@@ -523,8 +551,14 @@ export async function promptLooseDamage({ parts, healing, actors, recipients=[] 
     validate
   });
   if ( !data ) return null;
+  const damages = readDamages(parts, data.parts).map((damage, i) => {
+    const dice = parts[i].dice;
+    if ( !dice ) return damage;
+    if ( dice.max === 0 ) return { ...damage, value: Math.max(0, dice.modifier) };
+    return { ...damage, value: damage.value > 0 ? Math.max(0, damage.value + dice.modifier) : 0 };
+  });
   return {
-    damages: readDamages(parts, data.parts),
+    damages,
     ignore: !healing && !!data.ignore,
     actors: actors ? actors.filter((actor, i) => !!data.actors?.[i]) : null
   };

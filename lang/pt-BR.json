@@ -178,10 +178,11 @@
     "Loose": {
       "DamageTitle": "Dano",
       "HealingTitle": "Cura",
-      "DamageHint": "Digite o dano rolado na mesa, uma vez para todos, um número por tipo de dano. As resistências são aplicadas a cada alvo.",
-      "HealingHint": "Digite a cura rolada na mesa, uma vez para todos.",
+      "DamageHint": "Digite o valor dos dados rolados na mesa, sem modificadores, uma vez para todos. O modificador do link é somado e as resistências são aplicadas a cada alvo.",
+      "HealingHint": "Digite o valor dos dados rolados na mesa, sem modificadores, uma vez para todos. O modificador do link é somado.",
       "Recipients": "Quem é afetado",
-      "RecipientsRequired": "Escolha pelo menos um personagem."
+      "RecipientsRequired": "Escolha pelo menos um personagem.",
+      "Required": "Digite o valor dos dados, dentro do intervalo indicado."
     }
   }
 }

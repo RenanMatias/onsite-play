@@ -178,10 +178,11 @@
     "Loose": {
       "DamageTitle": "Damage",
       "HealingTitle": "Healing",
-      "DamageHint": "Type the damage rolled at the table, once for everyone, one number per damage type. Resistances are applied to each target.",
-      "HealingHint": "Type the healing rolled at the table, once for everyone.",
+      "DamageHint": "Type the dice rolled at the table, without modifiers, once for everyone. The link's modifier is added, and resistances are applied to each target.",
+      "HealingHint": "Type the dice rolled at the table, without modifiers, once for everyone. The link's modifier is added.",
       "Recipients": "Who is affected",
-      "RecipientsRequired": "Choose at least one character."
+      "RecipientsRequired": "Choose at least one character.",
+      "Required": "Enter the dice rolled, within the range shown."
     }
   }
 }

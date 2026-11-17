@@ -98,6 +98,25 @@ export function buildDamageParts(rolls) {
 }
 
 /**
+ * Split a damage formula into the dice rolled at the table and the fixed modifier added to them, e.g.
+ * "1d10 + 5" → dice 1–10, modifier 5. Dice are assumed to be added (no subtracted or kept dice).
+ * @param {string} formula
+ * @returns {{min: number, max: number, modifier: number}|null}  min = max = 0 when there are no dice; null when
+ *                                                                the formula can't be evaluated.
+ */
+export function diceRange(formula) {
+  try {
+    const low = new Roll(formula).evaluateSync({ minimize: true });
+    const high = new Roll(formula).evaluateSync({ maximize: true });
+    const sum = roll => roll.dice.reduce((total, die) => total + die.total, 0);
+    const min = sum(low);
+    return { min, max: sum(high), modifier: low.total - min };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve @references in a roll config's formula for display.
  * @param {{parts: string[], data: object}} roll
  * @returns {string}

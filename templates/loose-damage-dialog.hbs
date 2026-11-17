@@ -4,7 +4,12 @@
   <fieldset class="onsite-target-block" data-onsite-damage-group>
     {{#each parts}}
     <div class="onsite-part">
-      <input type="number" name="{{valueName}}" min="0" step="1" data-onsite-damage {{#if @first}}autofocus{{/if}}>
+      {{#if fixed}}
+      <span class="onsite-fixed">{{fixedLabel}}</span>
+      {{else}}
+      <input type="number" name="{{valueName}}" min="{{min}}" {{#if max}}max="{{max}}"{{/if}} step="1"
+             placeholder="{{placeholder}}" data-onsite-damage {{#if @first}}autofocus{{/if}}>
+      {{/if}}
       {{#if multiple}}
       <select name="{{typeName}}">{{selectOptions choices selected=defaultType}}</select>
       {{else}}
