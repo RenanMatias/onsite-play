@@ -327,7 +327,7 @@ async function runLooseDamage({ parts, tokenUuids }) {
 function handleLooseDamageQuery(data, { user }) {
   if ( !game.user.isActiveGM ) throw new Error("Only the active GM can resolve Onsite Play rolls.");
   const parts = Array.isArray(data?.parts) ? data.parts : [];
-  if ( !parts.length ) throw new Error("No damage requested.");
+  if ( !parts.length || (parts.length > 10) ) throw new Error("Invalid damage parts.");
   const valid = parts.map(part => {
     const types = Array.isArray(part?.types) ? part.types.map(String) : [];
     for ( const type of types ) {
@@ -335,7 +335,9 @@ function handleLooseDamageQuery(data, { user }) {
         throw new Error(`Invalid damage type "${type}".`);
       }
     }
-    return { formula: String(part?.formula ?? ""), types };
+    const formula = String(part?.formula ?? "");
+    if ( formula.length > 200 ) throw new Error("Damage formula too long.");
+    return { formula, types };
   });
   const tokenUuids = (Array.isArray(data.tokenUuids) ? data.tokenUuids : []).filter(uuid => {
     if ( typeof uuid !== "string" ) return false;

@@ -97,6 +97,10 @@ export function buildDamageParts(rolls) {
   return Array.from(merged.values());
 }
 
+/** Limits for formulas analyzed by diceRange (dice per term / terms, faces per die). */
+const MAX_DICE = 100;
+const MAX_FACES = 1000;
+
 /**
  * Split a damage formula into the dice rolled at the table and the fixed modifier added to them, e.g.
  * "1d10 + 5" → dice 1–10, modifier 5. Dice are assumed to be added (no subtracted or kept dice).
@@ -106,6 +110,10 @@ export function buildDamageParts(rolls) {
  */
 export function diceRange(formula) {
   try {
+    // Formulas can come from a player's query: refuse absurd dice before evaluating anything.
+    const parsed = new Roll(formula);
+    const tooBig = parsed.dice.some(die => !(die.number <= MAX_DICE) || !(die.faces <= MAX_FACES));
+    if ( tooBig || (parsed.dice.length > MAX_DICE) ) return null;
     const low = new Roll(formula).evaluateSync({ minimize: true });
     const high = new Roll(formula).evaluateSync({ maximize: true });
     const sum = roll => roll.dice.reduce((total, die) => total + die.total, 0);
