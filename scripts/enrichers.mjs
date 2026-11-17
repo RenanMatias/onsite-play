@@ -115,11 +115,19 @@ function onLinkClick(event) {
  */
 async function runGroupTest(test) {
   try {
-    const actors = game.actors.filter(a => a.type === "character")
+    let actors = game.actors.filter(a => a.type === "character")
       .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
     if ( !actors.length ) {
       ui.notifications.warn(loc("Warn.NoCharacters"));
       return;
+    }
+    // Tool checks: only characters proficient with the tool (proficiency multiplier 1 or more).
+    if ( test.type === "tool" ) {
+      actors = actors.filter(a => (a.system.tools?.[test.tool]?.value ?? 0) >= 1);
+      if ( !actors.length ) {
+        ui.notifications.warn(loc("Warn.NoToolProficiency", { label: test.label }));
+        return;
+      }
     }
     const results = await promptGroupTest({
       label: test.label,

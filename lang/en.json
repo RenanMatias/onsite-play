@@ -148,7 +148,8 @@
       "NoActorTargets": "None of the targeted tokens has an actor.",
       "NoDamageParts": "This activity has no damage to apply.",
       "NoHealingParts": "This activity has no healing to apply.",
-      "NoCharacters": "There are no player characters in this world."
+      "NoCharacters": "There are no player characters in this world.",
+      "NoToolProficiency": "No player character is proficient with this tool: {label}."
     },
     "Info": {
       "SentToGM": "Sent to the GM to resolve."

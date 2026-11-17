@@ -148,7 +148,8 @@
       "NoActorTargets": "Nenhum dos tokens marcados tem um ator.",
       "NoDamageParts": "Esta atividade não tem dano para aplicar.",
       "NoHealingParts": "Esta atividade não tem cura para aplicar.",
-      "NoCharacters": "Não há personagens de jogadores neste mundo."
+      "NoCharacters": "Não há personagens de jogadores neste mundo.",
+      "NoToolProficiency": "Nenhum personagem de jogador tem proficiência nesta ferramenta: {label}."
     },
     "Info": {
       "SentToGM": "Enviado ao Mestre para resolver."
