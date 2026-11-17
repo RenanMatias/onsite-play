@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Journal check and save links (`[[/check]]`, `[[/skill]]`, `[[/tool]]`, `[[/save]]`, `[[/concentration]]`): with no token selected, one dialog asks for the total of **every player character** making the test (leave the others blank), instead of dnd5e's "no actor" warning. With a token selected, the usual dialog opens for that character. Tool links list only the characters proficient with the tool. These links only ask for the total (concentration links still offer Natural 20 / Natural 1). When several characters roll, their results are merged into **one chat card**.
+- Journal condition links (`&Reference[frightened]`, `&Reference[exhaustion]`…): the apply button opens a dialog to choose the player characters who receive the condition (characters of the selected tokens are pre-checked), even without a token on the scene. Conditions already present are kept, exhaustion goes up one level, and a summary card with **Undo** is posted.
+- Journal damage and healing links (`[[/damage]]`, `[[/heal]]`, and `/damage` typed in chat): the GM types the dice rolled at the table **once for everyone** (the link's modifier is added: for `1d10+5`, type 1–10), and it is applied to the selected tokens or to the player characters ticked in the dialog, with resistances, a summary card and **Undo**.
+
 ## 1.0.1
 
 - Manual initiative: rolling a player character's initiative (combat tracker d20 button, character sheet, or **Roll All**) no longer opens the normal / advantage / disadvantage dialog. The GM types the total rolled at the table instead. **Roll All** asks for every player character in one dialog; NPCs still roll automatically.

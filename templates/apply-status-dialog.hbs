@@ -1,0 +1,18 @@
+<div class="onsite-dialog">
+  <p class="onsite-hint">{{hint}}</p>
+  <fieldset class="onsite-target-block" data-onsite-recipients>
+    <ul class="onsite-targets">
+      {{#each actors}}
+      <li class="onsite-target">
+        <label class="onsite-checkbox">
+          <input type="checkbox" name="{{checkName}}" {{checked checked}}>
+          <img class="onsite-portrait small" src="{{img}}" alt="">
+          <span class="onsite-name">{{name}}</span>
+          {{#if state}}<span class="onsite-tag">{{state}}</span>{{/if}}
+        </label>
+      </li>
+      {{/each}}
+    </ul>
+    <p class="onsite-error">{{localize "ONSITE.Loose.RecipientsRequired"}}</p>
+  </fieldset>
+</div>

@@ -82,6 +82,16 @@ Type the damage per target and apply it. No hit check.
 - dnd5e still applies the result: death save successes and failures (a natural 20 brings the character back with 1 HP, a natural 1 counts as two failures), concentration, and save or check request cards.
 - The **Roll for me** button in the saving throw flow always rolls in Foundry.
 
+### Journal links
+
+Roll links in journals and chat, such as `[[/skill athletics 12]]`, `[[/save dex 14]]` or `[[/damage 2d6 fire]]`, also use the dice rolled at the table.
+
+- **Checks and saves** (ability, skill, tool, saving throw, concentration): with a token selected, the usual dialog opens for that character. With **no token selected**, one dialog lists **every player character**: type the total for each character making the test, and leave the others blank. Tool checks list only the characters proficient with that tool (a message says so when nobody is). Only the total is asked; **Natural 20** / **Natural 1** are offered for concentration links only. One character gets the normal dnd5e roll card with the Onsite Play summary line; several characters share **one summary card** with a line each, for example **→ Aria: 14 vs DC 12, SUCCESS**.
+- **Damage and healing** (`[[/damage]]`, `[[/heal]]`, and `/damage` typed in chat): type the **dice** rolled **once for everyone**, one number per damage type, without modifiers: the link's modifier is added (for `[[/damage 1d10+5]]`, type 1–10 and 5 is added). It is applied to the selected tokens or, with no token selected, to the player characters you tick in the dialog, with each one's resistances, immunities and vulnerabilities. One summary card is posted, with **Undo**.
+- **Conditions** (the apply button next to `&Reference[frightened]`, `&Reference[exhaustion]`…): a dialog lists **every player character**, with the characters of the selected tokens already checked, and shows who already has the condition. The condition is added to the checked characters, even when they have no token on the scene. A character who already has it keeps it (dnd5e's button would remove it), and exhaustion goes up one level. One summary card is posted, with **Undo**.
+- **Request cards** (posted to chat with dnd5e's request button) work as before: a player who clicks a button rolls for their own character through the normal Onsite Play flow.
+- Rolls that dnd5e makes without asking, such as **fall damage**, keep dnd5e's default behavior.
+
 ### Chat summary and Undo
 
 Every action posts one summary card, for example:
@@ -137,6 +147,7 @@ Use `false` instead of `true` to opt the actor out again.
 - Damage for area healing spells (e.g. Mass Cure Wounds) is entered per target.
 - With the summary set to **Public**, players can see the target's AC on the chat card.
 - Advantage, disadvantage, and critical damage dice are handled at the table. The module only needs the final totals.
+- Journal check and save links are detected from dnd5e's roll-link markup. A future dnd5e version that changes it may bring back the normal behavior (with no token selected: a "no actor" warning) until the module is updated.
 - An activity that is not an attack, saving throw, damage, or healing activity (utility, checks, summons…) keeps dnd5e's default behavior.
 
 ## Languages

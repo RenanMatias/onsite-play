@@ -56,8 +56,8 @@
       "Hint": "Digite o total final do ataque (d20 + todos os modificadores) rolado na mesa. Deixe em branco para pular um alvo.",
       "Total": "Total",
       "Normal": "Normal",
-      "Nat20": "20 natural (acerto crítico)",
-      "Nat1": "1 natural (erro automático)",
+      "Nat20": "20 natural",
+      "Nat1": "1 natural",
       "TotalCover": "Cobertura total",
       "NoHP": "Sem pontos de vida"
     },
@@ -113,9 +113,9 @@
       "Missed": "{attacker} errou {target}.",
       "Skipped": "pulado",
       "CheckVs": "{total} contra CD {dc}",
-      "SaveVs": "resistência de {ability} {total} contra CD {dc}",
-      "SaveManual": "resistência de {ability}",
-      "NoSaveOutcome": "sem resultado de resistência, pulado",
+      "SaveVs": "salvaguarda de {ability} {total} contra CD {dc}",
+      "SaveManual": "salvaguarda de {ability}",
+      "NoSaveOutcome": "sem resultado da salvaguarda, pulado",
       "Damage": "{damage} de dano",
       "Halved": "(metade)",
       "Applied": "({amount} aplicado)",
@@ -147,7 +147,9 @@
       "NoTargets": "Nenhum token está marcado como alvo.",
       "NoActorTargets": "Nenhum dos tokens marcados tem um ator.",
       "NoDamageParts": "Esta atividade não tem dano para aplicar.",
-      "NoHealingParts": "Esta atividade não tem cura para aplicar."
+      "NoHealingParts": "Esta atividade não tem cura para aplicar.",
+      "NoCharacters": "Não há personagens de jogadores neste mundo.",
+      "NoToolProficiency": "Nenhum personagem de jogador tem proficiência nesta ferramenta: {label}."
     },
     "Info": {
       "SentToGM": "Enviado ao Mestre para resolver."
@@ -167,7 +169,30 @@
       "Hint": "Digite o total final (d20 + todos os modificadores) rolado na mesa. Em um 20 natural ou 1 natural, basta marcar: o total é opcional.",
       "Total": "Total",
       "Nat20": "20 natural",
-      "Nat1": "1 natural"
+      "Nat1": "1 natural",
+      "HintTotal": "Digite o total final (d20 + todos os modificadores) rolado na mesa."
+    },
+    "GroupTest": {
+      "Title": "Rolagem na mesa: {label}",
+      "Hint": "Digite o total final (d20 + todos os modificadores) rolado na mesa para cada personagem que faz o teste. Deixe em branco para pular um personagem."
+    },
+    "Loose": {
+      "DamageTitle": "Dano",
+      "HealingTitle": "Cura",
+      "DamageHint": "Digite o valor dos dados rolados na mesa, sem modificadores, uma vez para todos. O modificador do link é somado e as resistências são aplicadas a cada alvo.",
+      "HealingHint": "Digite o valor dos dados rolados na mesa, sem modificadores, uma vez para todos. O modificador do link é somado.",
+      "Recipients": "Quem é afetado",
+      "RecipientsRequired": "Escolha pelo menos um personagem.",
+      "Required": "Digite o valor dos dados, dentro do intervalo indicado."
+    },
+    "Status": {
+      "Title": "Aplicar condição: {status}",
+      "Hint": "Escolha os personagens de jogadores que recebem {status}. Os personagens dos tokens selecionados já vêm marcados.",
+      "Already": "já tem",
+      "Level": "nível {level}",
+      "AlreadyHas": "já está com {status}",
+      "LevelChange": "{status} {from} → {to}",
+      "AtMax": "{status} já está no nível {level}"
     }
   }
 }

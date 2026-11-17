@@ -394,12 +394,14 @@ export async function promptInitiative(rows) {
  * @param {string} request.label          What is rolled, e.g. "Dexterity Saving Throw".
  * @param {number|null} request.target    DC, when known.
  * @param {string[]} request.formulas     One formula per roll (almost always one).
+ * @param {boolean} [request.natural=true]  Offer Natural 20 / Natural 1 (not for journal check / save links).
  * @returns {Promise<{total: number|null, nat: "none"|"nat20"|"nat1"}[]|null>}
  *   One result per roll (the total may be blank for a natural 20 / 1), or null if canceled.
  */
-export async function promptD20Test(actor, { label, target, formulas }) {
+export async function promptD20Test(actor, { label, target, formulas, natural=true }) {
   const content = await renderTemplate(TEMPLATES.d20Test, {
-    hint: loc("Check.Hint"),
+    hint: loc(natural ? "Check.Hint" : "Check.HintTotal"),
+    natural,
     rows: formulas.map((formula, i) => ({
       label,
       img: actor.img,
@@ -416,11 +418,11 @@ export async function promptD20Test(actor, { label, target, formulas }) {
     content,
     okLabel: loc("Buttons.Apply"),
     width: 480,
-    // Each roll needs a total, unless Natural 20 / Natural 1 is ticked.
+    // Each roll needs a total, unless Natural 20 / Natural 1 is offered and ticked.
     validate: form => formulas.every((formula, i) => {
       const total = form.querySelector(`[name="rows.${i}.total"]`)?.value;
       const nat = form.querySelector(`[name="rows.${i}.nat"]:checked`)?.value;
-      return (toNumber(total) !== null) || ["nat20", "nat1"].includes(nat);
+      return (toNumber(total) !== null) || (natural && ["nat20", "nat1"].includes(nat));
     })
   });
   if ( !data ) return null;
@@ -429,9 +431,171 @@ export async function promptD20Test(actor, { label, target, formulas }) {
     const total = toNumber(row.total);
     return {
       total: total === null ? null : Math.floor(total),
-      nat: ["nat20", "nat1"].includes(row.nat) ? row.nat : "none"
+      nat: (natural && ["nat20", "nat1"].includes(row.nat)) ? row.nat : "none"
     };
   });
+}
+
+/**
+ * Ask for the result of one test (from a journal link) for several actors at once. Rows left blank are skipped.
+ * @param {object} request
+ * @param {string} request.label                              What is rolled, e.g. "Athletics".
+ * @param {number|null} request.dc
+ * @param {{actor: Actor, bonus: number|null}[]} request.actors
+ * @param {boolean} [request.natural=true]  Offer Natural 20 / Natural 1.
+ * @returns {Promise<{actor: Actor, total: number|null, nat: "none"|"nat20"|"nat1"}[]|null>}
+ *   The filled rows only, or null if canceled.
+ */
+export async function promptGroupTest({ label, dc, actors, natural=true }) {
+  const content = await renderTemplate(TEMPLATES.groupTest, {
+    hint: loc("GroupTest.Hint"),
+    dc,
+    natural,
+    rows: actors.map(({ actor, bonus }, i) => ({
+      name: actor.name,
+      img: actor.img,
+      bonus: bonus === null ? null : dnd5e.utils.formatNumber(bonus, { signDisplay: "always" }),
+      first: i === 0,
+      totalName: `rows.${i}.total`,
+      natName: `rows.${i}.nat`
+    }))
+  });
+  const isFilled = (total, nat) => (toNumber(total) !== null) || (natural && ["nat20", "nat1"].includes(nat));
+  const data = await waitForm({
+    title: loc("GroupTest.Title", { label }),
+    icon: "fa-solid fa-dice-d20",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 520,
+    validate: form => actors.some((a, i) => isFilled(
+      form.querySelector(`[name="rows.${i}.total"]`)?.value,
+      form.querySelector(`[name="rows.${i}.nat"]:checked`)?.value
+    ))
+  });
+  if ( !data ) return null;
+  return actors.flatMap(({ actor }, i) => {
+    const row = data.rows?.[i] ?? {};
+    if ( !isFilled(row.total, row.nat) ) return [];
+    const total = toNumber(row.total);
+    return [{
+      actor,
+      total: total === null ? null : Math.floor(total),
+      nat: (natural && ["nat20", "nat1"].includes(row.nat)) ? row.nat : "none"
+    }];
+  });
+}
+
+/**
+ * Ask for damage or healing rolled once for everyone (journal links), and, when `actors` is given, who is affected.
+ * @param {object} request
+ * The GM types the dice rolled for each part; its fixed modifier (`part.dice`, see diceRange) is added to it.
+ * A part without dice is applied as is.
+ * @param {(DamagePartInfo & {dice: {min: number, max: number, modifier: number}|null})[]} request.parts
+ * @param {boolean} request.healing
+ * @param {Actor[]|null} request.actors  Actors to choose from, or null when the recipients are already known.
+ * @param {string[]} [request.recipients]  Names of the recipients already known (shown, not editable).
+ * @returns {Promise<{damages: DamageInput[], ignore: boolean, actors: Actor[]|null}|null>}
+ *   The chosen actors (null when no list was shown), or null if canceled.
+ */
+export async function promptLooseDamage({ parts, healing, actors, recipients=[] }) {
+  const content = await renderTemplate(TEMPLATES.looseDamage, {
+    healing,
+    hint: loc(healing ? "Loose.HealingHint" : "Loose.DamageHint"),
+    required: loc("Loose.Required"),
+    parts: partFields(parts, "parts").map(part => ({
+      ...part,
+      fixed: part.dice?.max === 0,
+      min: part.dice?.max ? part.dice.min : 0,
+      max: part.dice?.max || null,
+      placeholder: part.dice?.max ? `${part.dice.min}–${part.dice.max}` : "",
+      fixedLabel: part.dice ? `= ${Math.max(0, part.dice.modifier)}` : ""
+    })),
+    actors: actors?.map((actor, i) => ({ name: actor.name, img: actor.img, checkName: `actors.${i}` })) ?? null,
+    recipients: recipients.join(", ")
+  });
+  // At least one part with damage (a part without dice always counts), and every typed value within its dice range.
+  const validateParts = form => {
+    const group = form.querySelector("[data-onsite-damage-group]");
+    let some = parts.some(part => part.dice?.max === 0);
+    let inRange = true;
+    for ( const input of form.querySelectorAll("input[data-onsite-damage]") ) {
+      const value = toNumber(input.value);
+      if ( value === null ) continue;
+      const min = toNumber(input.min) ?? 0;
+      const max = toNumber(input.max);
+      const ok = (value >= Math.max(min, 1)) && ((max === null) || (value <= max));
+      input.classList.toggle("onsite-out-of-range", !ok);
+      inRange &&= ok;
+      some ||= ok;
+    }
+    const valid = some && inRange;
+    group?.classList.toggle("onsite-invalid", !valid);
+    return valid;
+  };
+  const validate = form => {
+    let valid = validateParts(form);
+    const group = form.querySelector("[data-onsite-recipients]");
+    if ( group ) {
+      const ok = !!group.querySelector("input[type='checkbox']:checked");
+      group.classList.toggle("onsite-invalid", !ok);
+      valid &&= ok;
+    }
+    return valid;
+  };
+  const data = await waitForm({
+    title: loc(healing ? "Loose.HealingTitle" : "Loose.DamageTitle"),
+    icon: healing ? "fa-solid fa-heart-pulse" : "fa-solid fa-burst",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 460,
+    validate
+  });
+  if ( !data ) return null;
+  const damages = readDamages(parts, data.parts).map((damage, i) => {
+    const dice = parts[i].dice;
+    if ( !dice ) return damage;
+    if ( dice.max === 0 ) return { ...damage, value: Math.max(0, dice.modifier) };
+    return { ...damage, value: damage.value > 0 ? Math.max(0, damage.value + dice.modifier) : 0 };
+  });
+  return {
+    damages,
+    ignore: !healing && !!data.ignore,
+    actors: actors ? actors.filter((actor, i) => !!data.actors?.[i]) : null
+  };
+}
+
+/**
+ * Ask which player characters receive a condition (journal condition links).
+ * @param {object} request
+ * @param {string} request.label   Condition name.
+ * @param {string} request.img     Condition icon.
+ * @param {{actor: Actor, state: string|null, checked: boolean}[]} request.actors
+ *   `state` describes the current condition (e.g. "level 2"), `checked` pre-checks the row.
+ * @returns {Promise<Actor[]|null>}  The checked actors, or null if canceled.
+ */
+export async function promptApplyStatus({ label, img, actors }) {
+  const content = await renderTemplate(TEMPLATES.applyStatus, {
+    hint: loc("Status.Hint", { status: label }),
+    img,
+    actors: actors.map(({ actor, state, checked }, i) => ({
+      name: actor.name, img: actor.img, state, checked, checkName: `actors.${i}`
+    }))
+  });
+  const data = await waitForm({
+    title: loc("Status.Title", { status: label }),
+    icon: "fa-solid fa-person-burst",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 460,
+    validate: form => {
+      const group = form.querySelector("[data-onsite-recipients]");
+      const ok = !!group?.querySelector("input[type='checkbox']:checked");
+      group?.classList.toggle("onsite-invalid", !ok);
+      return ok;
+    }
+  });
+  if ( !data ) return null;
+  return actors.filter((entry, i) => !!data.actors?.[i]).map(entry => entry.actor);
 }
 
 /**

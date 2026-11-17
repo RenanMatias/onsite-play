@@ -60,6 +60,16 @@ export function getDamageParts(activity, { scaling, ammunition, attackMode }={})
   } catch(err) {
     console.warn(`${MODULE_ID} | Could not prepare damage parts for ${activity.uuid}`, err);
   }
+  return buildDamageParts(rolls);
+}
+
+/**
+ * Describe damage roll configurations ({parts, data, options: {type, types, properties}}) as damage parts.
+ * Used for activities and for journal damage links (DamageRoll process config).
+ * @param {object[]} rolls
+ * @returns {DamagePartInfo[]}
+ */
+export function buildDamageParts(rolls) {
   // The player announces one total per damage type, so parts with the same type options are merged into one
   // field (e.g. a longbow's 1d8 + 3 and the +1 from magic arrows, which dnd5e adds as a separate part).
   const merged = new Map();
@@ -85,6 +95,34 @@ export function getDamageParts(activity, { scaling, ammunition, attackMode }={})
     });
   }
   return Array.from(merged.values());
+}
+
+/** Simple formulas only: "1d10 + 5", "2d6+3", "1d6 + 1d4 - 1", "5". Anything else is not analyzed. */
+const SIMPLE_FORMULA = /^\s*[+-]?\s*(\d{1,3}d\d{1,4}|\d{1,4})(\s*[+-]\s*(\d{1,3}d\d{1,4}|\d{1,4}))*\s*$/i;
+
+/**
+ * Split a damage formula into the dice rolled at the table and the fixed modifier added to them, e.g.
+ * "1d10 + 5" → dice 1–10, modifier 5. Computed from the text, without evaluating a Roll: formulas can come from a
+ * player's query, so only simple sums of dice and numbers are accepted (fail closed).
+ * @param {string} formula
+ * @returns {{min: number, max: number, modifier: number}|null}  min = max = 0 when there are no dice; null for any
+ *                                                                other formula (subtracted dice, modifiers, pools…).
+ */
+export function diceRange(formula) {
+  if ( (typeof formula !== "string") || !SIMPLE_FORMULA.test(formula) ) return null;
+  const range = { min: 0, max: 0, modifier: 0 };
+  for ( const [, sign, term] of formula.replace(/\s+/g, "").matchAll(/([+-]?)([^+-]+)/g) ) {
+    const negative = sign === "-";
+    const dice = term.toLowerCase().split("d");
+    if ( dice.length === 2 ) {
+      const [number, faces] = dice.map(Number);
+      if ( negative || !faces ) return null;
+      range.min += number;
+      range.max += number * faces;
+    }
+    else range.modifier += negative ? -Number(term) : Number(term);
+  }
+  return range;
 }
 
 /**
@@ -138,8 +176,7 @@ export async function applyDamageToTarget(target, damages, { ignore=false, multi
   };
 
   // Always work through the token so unlinked tokens change their synthetic actor, not the base actor.
-  const token = fromUuidSync(target.uuid);
-  const actor = token?.actor;
+  const { token, actor } = resolveTarget(target.uuid);
   const hp = actor?.system?.attributes?.hp;
   if ( !hp ) {
     result.noHP = true;
@@ -148,9 +185,9 @@ export async function applyDamageToTarget(target, damages, { ignore=false, multi
 
   const hpSource = actor.system._source.attributes?.hp ?? {};
   const snapshot = {
-    tokenUuid: token.uuid,
+    tokenUuid: token?.uuid ?? null,
     actorUuid: actor.uuid,
-    name: token.name,
+    name: token?.name ?? actor.name,
     hp: { value: hp.value, temp: hp.temp ?? 0, tempmax: hpSource.tempmax ?? 0 },
     statuses: [],
     combatants: []
@@ -200,8 +237,7 @@ export async function applyDamageToTarget(target, damages, { ignore=false, multi
 export async function applyHealingToTarget(target, healing) {
   const result = { healed: 0, tempGained: 0, hpBefore: null, hpAfter: null, noHP: false, revived: false, snapshot: null };
 
-  const token = fromUuidSync(target.uuid);
-  const actor = token?.actor;
+  const { token, actor } = resolveTarget(target.uuid);
   const hp = actor?.system?.attributes?.hp;
   if ( !hp ) {
     result.noHP = true;
@@ -211,9 +247,9 @@ export async function applyHealingToTarget(target, healing) {
   const hpSource = actor.system._source.attributes?.hp ?? {};
   const death = actor.system.attributes.death;
   const snapshot = {
-    tokenUuid: token.uuid,
+    tokenUuid: token?.uuid ?? null,
     actorUuid: actor.uuid,
-    name: token.name,
+    name: token?.name ?? actor.name,
     hp: { value: hp.value, temp: hp.temp ?? 0, tempmax: hpSource.tempmax ?? 0 },
     death: death ? { success: death.success ?? 0, failure: death.failure ?? 0 } : null,
     statuses: [],
@@ -254,9 +290,20 @@ export async function applyHealingToTarget(target, healing) {
 }
 
 /**
+ * Resolve a target UUID: a TokenDocument (its actor, synthetic for unlinked tokens) or an Actor without a token.
+ * @param {string} uuid
+ * @returns {{token: TokenDocument|null, actor: Actor|null}}
+ */
+function resolveTarget(uuid) {
+  const doc = fromUuidSync(uuid);
+  if ( doc instanceof Actor ) return { token: null, actor: doc };
+  return { token: doc ?? null, actor: doc?.actor ?? null };
+}
+
+/**
  * A target just reached 0 HP. NPCs (and other non-characters) get the Defeated status and are marked
  * defeated / removed from combat. Characters get Unconscious instead (death saves), and stay in combat.
- * @param {TokenDocument} token
+ * @param {TokenDocument|null} token  null for an actor without a token on the scene.
  * @param {Actor} actor
  * @param {object} snapshot  Mutated with the statuses and combatants changed.
  * @returns {Promise<Partial<DamageResult>>}
@@ -279,7 +326,7 @@ async function handleDowned(token, actor, snapshot) {
     if ( actor.statuses.has(status) ) snapshot.statuses.push(status);
   }
 
-  if ( !isPC ) Object.assign(out, await defeatCombatants(token, snapshot));
+  if ( !isPC && token ) Object.assign(out, await defeatCombatants(token, snapshot));
   return out;
 }
 
@@ -345,7 +392,7 @@ async function defeatCombatants(token, snapshot) {
 export async function undoSnapshots(snapshots) {
   const failures = [];
   for ( const snap of [...snapshots].reverse() ) {
-    const token = fromUuidSync(snap.tokenUuid);
+    const token = snap.tokenUuid ? fromUuidSync(snap.tokenUuid) : null;
     const actor = token?.actor ?? fromUuidSync(snap.actorUuid);
     if ( !actor ) {
       failures.push(snap.name);

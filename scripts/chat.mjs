@@ -6,47 +6,61 @@ import { getSetting } from "./settings.mjs";
 import { undoSnapshots } from "./damage.mjs";
 import { confirmUndo } from "./dialogs.mjs";
 import { restoreAttackResources } from "./ammunition.mjs";
+import { undoConditions } from "./conditions.mjs";
 
 /**
  * Post one summary card for an action.
- * @param {Activity} activity
+ * @param {Activity|{title: string, img: string, actors: Actor[]}} source
+ *   The activity used, or a header for actions without one (journal damage links): its title and image, and the
+ *   actors affected (their owners see the card when the visibility is "GM and actor owners").
  * @param {object[]} entries    Summary entries ({name, img, result, segments, notes}).
  * @param {object[]} snapshots  Undo snapshots.
  * @param {object[]} [resources]  Ammunition / thrown weapons spent (see spendAttackResources).
+ * @param {object[]} [conditions]  Conditions added from journal links (see runApplyStatus).
  * @returns {Promise<ChatMessage|void>}
  */
-export async function postSummary(activity, entries, snapshots=[], resources=[]) {
+export async function postSummary(source, entries, snapshots=[], resources=[], conditions=[]) {
   if ( !entries.length ) return;
-  const actor = activity.actor;
-  const item = activity.item;
+  const isActivity = !!source.item;
+  let header;
+  if ( isActivity ) {
+    const item = source.item;
+    header = {
+      actorName: source.actor.name,
+      itemName: item.name,
+      itemImg: item.img,
+      activityName: (source.name && (source.name !== item.name)) ? source.name : null
+    };
+  } else header = { actorName: null, itemName: source.title, itemImg: source.img, activityName: null };
   const content = await foundry.applications.handlebars.renderTemplate(TEMPLATES.summary, {
-    actorName: actor.name,
-    itemName: item.name,
-    itemImg: item.img,
-    activityName: (activity.name && (activity.name !== item.name)) ? activity.name : null,
+    ...header,
     entries: entries.map(e => ({ ...e, detail: e.segments.filter(Boolean).join(", ") })),
     resources: resources.map(r => loc("Ammo.Spent", { name: r.name, from: r.quantity, to: r.remaining })),
-    canUndo: (snapshots.length > 0) || (resources.length > 0)
+    canUndo: (snapshots.length > 0) || (resources.length > 0) || (conditions.length > 0)
   });
+  // Without an activity the card is spoken by the user: getSpeaker() would fall back to a controlled token,
+  // which may be one of the targets.
+  const speaker = isActivity ? ChatMessage.implementation.getSpeaker({ actor: source.actor })
+    : { scene: null, actor: null, token: null, alias: game.user.name };
   return ChatMessage.implementation.create({
     content,
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    whisper: getWhisperRecipients(actor),
-    flags: { [MODULE_ID]: { summary: true, snapshots, resources } }
+    speaker,
+    whisper: getWhisperRecipients(isActivity ? [source.actor] : (source.actors ?? [])),
+    flags: { [MODULE_ID]: { summary: true, snapshots, resources, conditions } }
   });
 }
 
 /**
  * Whisper recipients according to the "visibility" setting (empty array = public).
- * @param {Actor} actor
+ * @param {Actor[]} actors  Actors whose owners may see the card.
  * @returns {string[]}
  */
-function getWhisperRecipients(actor) {
+function getWhisperRecipients(actors) {
   const mode = getSetting("visibility");
   if ( mode === "public" ) return [];
   const gms = game.users.filter(u => u.isGM).map(u => u.id);
   if ( mode === "gm" ) return gms;
-  const owners = game.users.filter(u => !u.isGM && actor.testUserPermission(u, "OWNER")).map(u => u.id);
+  const owners = game.users.filter(u => !u.isGM && actors.some(a => a?.testUserPermission(u, "OWNER"))).map(u => u.id);
   return [...gms, ...owners];
 }
 
@@ -90,15 +104,7 @@ export function onRenderCheckMessage(message, html) {
   html.querySelectorAll(".dice-roll").forEach((el, i) => {
     const roll = message.rolls[i];
     if ( !roll ) return;
-    const natLabel = roll.isCritical ? loc("Summary.Nat20") : roll.isFumble ? loc("Summary.Nat1") : null;
-    const total = natLabel ? `${roll.total} (${natLabel})` : `${roll.total}`;
-    const target = roll.options.target;
-    const segments = [Number.isNumeric(target) ? loc("Summary.CheckVs", { total, dc: target }) : total];
-    let result = "";
-    if ( Number.isNumeric(target) ) {
-      result = roll.isSuccess ? "pass" : "fail";
-      segments.push(loc(message.type === "save" ? `Result.${result}` : `Result.${result === "pass" ? "success" : "failure"}`));
-    }
+    const { segments, result } = describeD20Roll(roll, message.type === "save");
     const summary = document.createElement("div");
     summary.classList.add("onsite-summary");
     summary.innerHTML = `
@@ -112,6 +118,25 @@ export function onRenderCheckMessage(message, html) {
 }
 
 /**
+ * Describe a check or save rolled at the table: "14 (natural 20) vs DC 15", "SAVED".
+ * @param {D20Roll} roll
+ * @param {boolean} isSave  Saving throws read SAVED / FAILED, checks SUCCESS / FAILURE.
+ * @returns {{segments: string[], result: string}}  `result` is the CSS modifier (pass, fail or "").
+ */
+export function describeD20Roll(roll, isSave) {
+  const natLabel = roll.isCritical ? loc("Summary.Nat20") : roll.isFumble ? loc("Summary.Nat1") : null;
+  const total = natLabel ? `${roll.total} (${natLabel})` : `${roll.total}`;
+  const target = roll.options.target;
+  const segments = [Number.isNumeric(target) ? loc("Summary.CheckVs", { total, dc: target }) : total];
+  let result = "";
+  if ( Number.isNumeric(target) ) {
+    result = roll.isSuccess ? "pass" : "fail";
+    segments.push(loc(isSave ? `Result.${result}` : `Result.${result === "pass" ? "success" : "failure"}`));
+  }
+  return { segments, result };
+}
+
+/**
  * Restore everything recorded on a summary message and mark it as undone.
  * @param {ChatMessage} message
  */
@@ -122,7 +147,8 @@ async function undoSummary(message) {
   try {
     const failures = [
       ...await undoSnapshots(flags.snapshots ?? []),
-      ...await restoreAttackResources(flags.resources ?? [])
+      ...await restoreAttackResources(flags.resources ?? []),
+      ...await undoConditions(flags.conditions ?? [])
     ];
     await message.setFlag(MODULE_ID, "undone", true);
     if ( failures.length ) ui.notifications.warn(loc("Undo.Missing", { names: failures.join(", ") }));

@@ -18,6 +18,7 @@ import { MODULE_ID, loc } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { isGuidedActor } from "./hooks.mjs";
 import { promptD20Test } from "./dialogs.mjs";
+import { linkTestType, offersNatural } from "./enrichers.mjs";
 
 const { NumericTerm, OperatorTerm } = foundry.dice.terms;
 
@@ -43,7 +44,11 @@ export function usesManualChecks(actor) {
 /*  Interception                                */
 /* -------------------------------------------- */
 
-/** Replace dnd5e's roll configuration dialog. Pass `{ "onsite-play": { digital: true } }` in the config to skip. */
+/**
+ * Replace dnd5e's roll configuration dialog. Config keys under "onsite-play":
+ *  - `digital: true` keeps dnd5e's normal roll.
+ *  - `result: { total, nat }` uses a result already typed by the GM (journal links) instead of asking for it.
+ */
 function onPreRollD20Test(config, dialog) {
   if ( config[MODULE_ID]?.digital ) return;
   // Initiative also fires "abilityCheck"; it has its own handling in initiative.mjs.
@@ -74,12 +79,20 @@ class ManualRollConfiguration {
     if ( !rolls.length ) return rolls;
 
     const actor = config.subject;
-    const request = {
-      label: dialog.options?.window?.title || message.data?.flavor || actor.name,
-      target: Number.isFinite(rolls[0].options.target) ? rolls[0].options.target : null,
-      formulas: rolls.map(roll => roll.formula)
-    };
-    const input = game.user.isGM ? await promptD20Test(actor, request) : await askGM(actor, request);
+    const preset = config[MODULE_ID]?.result;
+    let input;
+    if ( preset ) input = rolls.map(() => preset);
+    else {
+      const request = {
+        label: dialog.options?.window?.title || message.data?.flavor || actor.name,
+        target: Number.isFinite(rolls[0].options.target) ? rolls[0].options.target : null,
+        formulas: rolls.map(roll => roll.formula)
+      };
+      // Rolled from a journal link (with a token selected): the same choice as the group dialog.
+      const linkType = linkTestType(config.event);
+      if ( linkType ) request.natural = offersNatural(linkType);
+      input = game.user.isGM ? await promptD20Test(actor, request) : await askGM(actor, request);
+    }
     if ( !input ) return [];
     rolls.forEach((roll, i) => applyManualResult(roll, input[i]));
     // The roll card is shown as an Onsite Play summary line (see onRenderCheckMessage in chat.mjs).
@@ -170,7 +183,7 @@ async function askGM(actor, request) {
 /**
  * Query handler (registered in CONFIG.queries) run on the active GM's client. Unlike the flows, the player's
  * roll waits for the answer, so this resolves only once the GM closes the dialog.
- * @param {{actorUuid: string, label: string, target: number|null, formulas: string[]}} data
+ * @param {{actorUuid: string, label: string, target: number|null, formulas: string[], natural?: boolean}} data
  * @param {{user: User}} context
  * @returns {Promise<object[]|null>}
  */
@@ -184,6 +197,7 @@ async function handleD20TestQuery(data, { user }) {
   return promptD20Test(actor, {
     label: String(data.label ?? actor.name),
     target: Number.isFinite(data.target) ? data.target : null,
-    formulas
+    formulas,
+    natural: data.natural !== false
   });
 }

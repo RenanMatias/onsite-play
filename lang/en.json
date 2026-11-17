@@ -147,7 +147,9 @@
       "NoTargets": "No tokens are targeted.",
       "NoActorTargets": "None of the targeted tokens has an actor.",
       "NoDamageParts": "This activity has no damage to apply.",
-      "NoHealingParts": "This activity has no healing to apply."
+      "NoHealingParts": "This activity has no healing to apply.",
+      "NoCharacters": "There are no player characters in this world.",
+      "NoToolProficiency": "No player character is proficient with this tool: {label}."
     },
     "Info": {
       "SentToGM": "Sent to the GM to resolve."
@@ -167,7 +169,30 @@
       "Hint": "Type the final total (d20 + all modifiers) rolled at the table. On a natural 20 or natural 1, ticking it is enough: the total is optional.",
       "Total": "Total",
       "Nat20": "Natural 20",
-      "Nat1": "Natural 1"
+      "Nat1": "Natural 1",
+      "HintTotal": "Type the final total (d20 + all modifiers) rolled at the table."
+    },
+    "GroupTest": {
+      "Title": "Roll at the table: {label}",
+      "Hint": "Type the final total (d20 + all modifiers) rolled at the table for each character making the test. Leave blank to skip a character."
+    },
+    "Loose": {
+      "DamageTitle": "Damage",
+      "HealingTitle": "Healing",
+      "DamageHint": "Type the dice rolled at the table, without modifiers, once for everyone. The link's modifier is added, and resistances are applied to each target.",
+      "HealingHint": "Type the dice rolled at the table, without modifiers, once for everyone. The link's modifier is added.",
+      "Recipients": "Who is affected",
+      "RecipientsRequired": "Choose at least one character.",
+      "Required": "Enter the dice rolled, within the range shown."
+    },
+    "Status": {
+      "Title": "Apply condition: {status}",
+      "Hint": "Choose the player characters who receive {status}. Characters of the selected tokens are already checked.",
+      "Already": "already has it",
+      "Level": "level {level}",
+      "AlreadyHas": "already {status}",
+      "LevelChange": "{status} {from} → {to}",
+      "AtMax": "{status} already at level {level}"
     }
   }
 }
