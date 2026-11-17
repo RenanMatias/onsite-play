@@ -36,8 +36,10 @@ export async function postSummary(source, entries, snapshots=[], resources=[]) {
     resources: resources.map(r => loc("Ammo.Spent", { name: r.name, from: r.quantity, to: r.remaining })),
     canUndo: (snapshots.length > 0) || (resources.length > 0)
   });
+  // Without an activity the card is spoken by the user: getSpeaker() would fall back to a controlled token,
+  // which may be one of the targets.
   const speaker = isActivity ? ChatMessage.implementation.getSpeaker({ actor: source.actor })
-    : ChatMessage.implementation.getSpeaker({ user: game.user });
+    : { scene: null, actor: null, token: null, alias: game.user.name };
   return ChatMessage.implementation.create({
     content,
     speaker,
