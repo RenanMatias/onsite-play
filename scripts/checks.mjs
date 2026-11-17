@@ -43,7 +43,11 @@ export function usesManualChecks(actor) {
 /*  Interception                                */
 /* -------------------------------------------- */
 
-/** Replace dnd5e's roll configuration dialog. Pass `{ "onsite-play": { digital: true } }` in the config to skip. */
+/**
+ * Replace dnd5e's roll configuration dialog. Config keys under "onsite-play":
+ *  - `digital: true` keeps dnd5e's normal roll.
+ *  - `result: { total, nat }` uses a result already typed by the GM (journal links) instead of asking for it.
+ */
 function onPreRollD20Test(config, dialog) {
   if ( config[MODULE_ID]?.digital ) return;
   // Initiative also fires "abilityCheck"; it has its own handling in initiative.mjs.
@@ -74,12 +78,17 @@ class ManualRollConfiguration {
     if ( !rolls.length ) return rolls;
 
     const actor = config.subject;
-    const request = {
-      label: dialog.options?.window?.title || message.data?.flavor || actor.name,
-      target: Number.isFinite(rolls[0].options.target) ? rolls[0].options.target : null,
-      formulas: rolls.map(roll => roll.formula)
-    };
-    const input = game.user.isGM ? await promptD20Test(actor, request) : await askGM(actor, request);
+    const preset = config[MODULE_ID]?.result;
+    let input;
+    if ( preset ) input = rolls.map(() => preset);
+    else {
+      const request = {
+        label: dialog.options?.window?.title || message.data?.flavor || actor.name,
+        target: Number.isFinite(rolls[0].options.target) ? rolls[0].options.target : null,
+        formulas: rolls.map(roll => roll.formula)
+      };
+      input = game.user.isGM ? await promptD20Test(actor, request) : await askGM(actor, request);
+    }
     if ( !input ) return [];
     rolls.forEach((roll, i) => applyManualResult(roll, input[i]));
     // The roll card is shown as an Onsite Play summary line (see onRenderCheckMessage in chat.mjs).
