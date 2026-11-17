@@ -265,17 +265,7 @@ async function runHealFlow(activity, targets, { scaling }) {
   const snapshots = [];
   for ( const row of rows ) {
     const entry = createEntry(row.target, "heal");
-    const result = await applyHealingToTarget(row.target, row.damages);
-    if ( result.snapshot ) snapshots.push(result.snapshot);
-    if ( result.noHP ) entry.segments.push(loc("Summary.NoHP"));
-    else {
-      const rolled = row.damages.filter(d => d.value > 0)
-        .map(d => `${d.value} ${damageTypeLabel(d.type).toLowerCase()}`).join(" + ");
-      entry.segments.push(loc("Summary.Healing", { healing: rolled }));
-      if ( result.tempGained ) entry.segments.push(loc("Summary.TempHP", { amount: result.tempGained }));
-      entry.segments.push(loc("Summary.HP", { from: result.hpBefore, to: result.hpAfter }));
-      if ( result.revived ) entry.notes.push(loc("Summary.Revived", { target: row.target.name }));
-    }
+    await healAndDescribe(row.target, row.damages, entry, snapshots);
     entries.push(entry);
   }
   await postSummary(activity, entries, snapshots);
@@ -290,7 +280,7 @@ async function runHealFlow(activity, targets, { scaling }) {
  * @param {TargetInfo} target
  * @param {string} result  CSS modifier (hit, crit, miss, pass, fail, skip, damage).
  */
-function createEntry(target, result) {
+export function createEntry(target, result) {
   return { name: target.name, img: target.img, result, segments: [], notes: [] };
 }
 
@@ -302,7 +292,7 @@ function createEntry(target, result) {
  * @param {object} entry       Summary entry (mutated).
  * @param {object[]} snapshots Undo snapshots (mutated).
  */
-async function applyAndDescribe(target, damages, options, entry, snapshots) {
+export async function applyAndDescribe(target, damages, options, entry, snapshots) {
   const result = await applyDamageToTarget(target, damages, options);
   if ( result.snapshot ) snapshots.push(result.snapshot);
 
@@ -330,4 +320,26 @@ async function applyAndDescribe(target, damages, options, entry, snapshots) {
   if ( result.fallen ) {
     entry.notes.push(loc(result.pcDown ? "Summary.Unconscious" : "Summary.Fallen", { target: target.name }));
   }
+}
+
+/**
+ * Apply healing and append its description to a summary entry.
+ * @param {TargetInfo} target
+ * @param {DamageInput[]} healing
+ * @param {object} entry       Summary entry (mutated).
+ * @param {object[]} snapshots Undo snapshots (mutated).
+ */
+export async function healAndDescribe(target, healing, entry, snapshots) {
+  const result = await applyHealingToTarget(target, healing);
+  if ( result.snapshot ) snapshots.push(result.snapshot);
+  if ( result.noHP ) {
+    entry.segments.push(loc("Summary.NoHP"));
+    return;
+  }
+  const rolled = healing.filter(d => d.value > 0)
+    .map(d => `${d.value} ${damageTypeLabel(d.type).toLowerCase()}`).join(" + ");
+  entry.segments.push(loc("Summary.Healing", { healing: rolled }));
+  if ( result.tempGained ) entry.segments.push(loc("Summary.TempHP", { amount: result.tempGained }));
+  entry.segments.push(loc("Summary.HP", { from: result.hpBefore, to: result.hpAfter }));
+  if ( result.revived ) entry.notes.push(loc("Summary.Revived", { target: target.name }));
 }

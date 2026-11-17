@@ -1,0 +1,40 @@
+<div class="onsite-dialog">
+  <p class="onsite-hint">{{hint}}</p>
+  <fieldset class="onsite-target-block" data-onsite-damage-group>
+    {{#each parts}}
+    <div class="onsite-part">
+      <input type="number" name="{{valueName}}" min="0" step="1" data-onsite-damage {{#if @first}}autofocus{{/if}}>
+      {{#if multiple}}
+      <select name="{{typeName}}">{{selectOptions choices selected=defaultType}}</select>
+      {{else}}
+      <input type="hidden" name="{{typeName}}" value="{{defaultType}}">
+      <span class="onsite-type">{{typeLabel}}</span>
+      {{/if}}
+      <span class="onsite-formula">{{formula}}</span>
+    </div>
+    {{/each}}
+    <p class="onsite-error">{{required}}</p>
+    {{#unless healing}}
+    <label class="onsite-checkbox">
+      <input type="checkbox" name="ignore"> {{localize "ONSITE.Damage.Ignore"}}
+    </label>
+    {{/unless}}
+  </fieldset>
+  {{#if actors}}
+  <fieldset class="onsite-target-block" data-onsite-recipients>
+    <legend>{{localize "ONSITE.Loose.Recipients"}}</legend>
+    <ul class="onsite-targets">
+      {{#each actors}}
+      <li class="onsite-target">
+        <label class="onsite-checkbox">
+          <input type="checkbox" name="{{checkName}}">
+          <img class="onsite-portrait small" src="{{img}}" alt="">
+          <span class="onsite-name">{{name}}</span>
+        </label>
+      </li>
+      {{/each}}
+    </ul>
+    <p class="onsite-error">{{localize "ONSITE.Loose.RecipientsRequired"}}</p>
+  </fieldset>
+  {{/if}}
+</div>

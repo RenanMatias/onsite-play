@@ -10,10 +10,18 @@
  *      (see `result` in checks.mjs). With a token selected or a character assigned, dnd5e runs as usual.
  *      The link's data is read like dnd5e's getRollActionDataset: the `.roll-link-group` dataset, then the clicked
  *      `.roll-link` dataset on top (multi-skill links have one sub-link per skill).
+ *  - Loose damage / healing links (`[[/damage 2d6 fire]]`, `[[/heal 2d6]]`, also `/damage` typed in chat) roll a
+ *      DamageRoll without an activity: dnd5e.preRollDamageV2 fires with no `config.subject`. hooks.mjs cancels that
+ *      roll when handleLooseDamage takes over. The damage is typed once and applied to the controlled tokens, or to
+ *      the player characters chosen in the dialog.
  */
 import { MODULE_ID, loc } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
-import { promptGroupTest } from "./dialogs.mjs";
+import { promptGroupTest, promptLooseDamage } from "./dialogs.mjs";
+import { buildDamageParts } from "./damage.mjs";
+import { buildActorTargetInfo, buildTargetInfo } from "./targets.mjs";
+import { applyAndDescribe, createEntry, healAndDescribe } from "./flows.mjs";
+import { postSummary } from "./chat.mjs";
 
 /** Link types handled as checks or saves. */
 const TEST_TYPES = new Set(["check", "skill", "tool", "save", "concentration"]);
@@ -33,6 +41,7 @@ const TEST_TYPES = new Set(["check", "skill", "tool", "save", "concentration"]);
 export function registerEnrichers() {
   document.addEventListener("click", onLinkClick, { capture: true });
   CONFIG.queries[`${MODULE_ID}.enricherTest`] = handleEnricherTestQuery;
+  CONFIG.queries[`${MODULE_ID}.looseDamage`] = handleLooseDamageQuery;
 }
 
 /* -------------------------------------------- */
@@ -171,6 +180,126 @@ function handleEnricherTestQuery(data) {
     label: String(t.label ?? "")
   };
   runGroupTest(test);
+  return true;
+}
+
+/* -------------------------------------------- */
+/*  Loose damage and healing                    */
+/* -------------------------------------------- */
+
+/**
+ * @typedef LoosePart
+ * @property {string} formula
+ * @property {string[]} types  Damage or healing types allowed (empty = untyped).
+ */
+
+/**
+ * dnd5e.preRollDamageV2 without an activity: take over the roll when the module is active.
+ * @param {DamageRollProcessConfiguration} config
+ * @returns {boolean}  true when the flow took over (the caller cancels dnd5e's roll).
+ */
+export function handleLooseDamage(config) {
+  if ( !getSetting("enabled") || !game.users.activeGM ) return false;
+  const parts = readLooseParts(config);
+  if ( !parts.length ) return false;
+  const tokenUuids = (canvas.tokens?.controlled ?? []).map(token => token.document.uuid);
+  if ( game.user.isGM ) runLooseDamage({ parts, tokenUuids });
+  else askGM(`${MODULE_ID}.looseDamage`, { parts, tokenUuids });
+  return true;
+}
+
+/**
+ * Read the formulas and types of a loose damage roll.
+ * @param {DamageRollProcessConfiguration} config
+ * @returns {LoosePart[]}
+ */
+function readLooseParts(config) {
+  return (config.rolls ?? []).map(roll => ({
+    formula: (roll.parts ?? []).join(" + "),
+    types: (roll.options?.types?.length ? Array.from(roll.options.types) : [roll.options?.type]).filter(Boolean)
+  })).filter(part => part.formula);
+}
+
+/**
+ * Is this healing? Only when every part is typed and every type is a healing type.
+ * @param {LoosePart[]} parts
+ * @returns {boolean}
+ */
+function isHealing(parts) {
+  return parts.every(part => part.types.length && part.types.every(t => t in CONFIG.DND5E.healingTypes));
+}
+
+/**
+ * Ask for the damage or healing rolled at the table and apply it to every recipient. Runs on the GM client.
+ * @param {{parts: LoosePart[], tokenUuids: string[]}} request
+ */
+async function runLooseDamage({ parts, tokenUuids }) {
+  try {
+    const healing = isHealing(parts);
+    const damageParts = buildDamageParts(parts.map(part => ({
+      parts: [part.formula],
+      options: { type: part.types[0], types: part.types }
+    })));
+    const tokens = tokenUuids.map(uuid => fromUuidSync(uuid)).filter(doc => doc?.documentName === "Token");
+
+    let targets;
+    let input;
+    if ( tokens.length ) {
+      input = await promptLooseDamage({ parts: damageParts, healing, actors: null });
+      targets = tokens.map(buildTargetInfo);
+    } else {
+      const actors = game.actors.filter(a => a.type === "character")
+        .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
+      if ( !actors.length ) {
+        ui.notifications.warn(loc("Warn.NoCharacters"));
+        return;
+      }
+      input = await promptLooseDamage({ parts: damageParts, healing, actors });
+      targets = input?.actors.map(buildActorTargetInfo);
+    }
+    if ( !input ) return;
+    targets = targets.filter(Boolean);
+
+    const entries = [];
+    const snapshots = [];
+    for ( const target of targets ) {
+      const entry = createEntry(target, healing ? "heal" : "damage");
+      if ( healing ) await healAndDescribe(target, input.damages, entry, snapshots);
+      else await applyAndDescribe(target, input.damages, { ignore: input.ignore }, entry, snapshots);
+      entries.push(entry);
+    }
+    await postSummary({
+      title: loc(healing ? "Loose.HealingTitle" : "Loose.DamageTitle"),
+      img: healing ? "icons/svg/heal.svg" : "icons/svg/explosion.svg",
+      actors: targets.map(target => target.actor)
+    }, entries, snapshots);
+  } catch(err) {
+    console.error(`${MODULE_ID} | Journal damage link failed`, err);
+    ui.notifications.error(loc("Warn.FlowError"));
+  }
+}
+
+/**
+ * Query handler (registered in CONFIG.queries) run on the active GM's client.
+ * Returns immediately; the dialog continues in the background so the query never times out.
+ * @param {{parts: LoosePart[], tokenUuids: string[]}} data
+ * @returns {boolean}
+ */
+function handleLooseDamageQuery(data) {
+  if ( !game.user.isActiveGM ) throw new Error("Only the active GM can resolve Onsite Play rolls.");
+  const parts = Array.isArray(data?.parts) ? data.parts : [];
+  if ( !parts.length ) throw new Error("No damage requested.");
+  const valid = parts.map(part => {
+    const types = Array.isArray(part?.types) ? part.types.map(String) : [];
+    for ( const type of types ) {
+      if ( !(type in CONFIG.DND5E.damageTypes) && !(type in CONFIG.DND5E.healingTypes) ) {
+        throw new Error(`Invalid damage type "${type}".`);
+      }
+    }
+    return { formula: String(part?.formula ?? ""), types };
+  });
+  const tokenUuids = Array.isArray(data.tokenUuids) ? data.tokenUuids.filter(u => typeof u === "string") : [];
+  runLooseDamage({ parts: valid, tokenUuids });
   return true;
 }
 

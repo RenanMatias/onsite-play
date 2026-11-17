@@ -482,6 +482,49 @@ export async function promptGroupTest({ label, dc, actors }) {
 }
 
 /**
+ * Ask for damage or healing rolled once for everyone (journal links), and, when `actors` is given, who is affected.
+ * @param {object} request
+ * @param {DamagePartInfo[]} request.parts
+ * @param {boolean} request.healing
+ * @param {Actor[]|null} request.actors  Actors to choose from, or null when the recipients are already known.
+ * @returns {Promise<{damages: DamageInput[], ignore: boolean, actors: Actor[]|null}|null>}
+ *   The chosen actors (null when no list was shown), or null if canceled.
+ */
+export async function promptLooseDamage({ parts, healing, actors }) {
+  const content = await renderTemplate(TEMPLATES.looseDamage, {
+    healing,
+    hint: loc(healing ? "Loose.HealingHint" : "Loose.DamageHint"),
+    required: loc(healing ? "Heal.Required" : "Damage.Required"),
+    parts: partFields(parts, "parts"),
+    actors: actors?.map((actor, i) => ({ name: actor.name, img: actor.img, checkName: `actors.${i}` })) ?? null
+  });
+  const validate = form => {
+    let valid = validateDamageGroups(form);
+    const group = form.querySelector("[data-onsite-recipients]");
+    if ( group ) {
+      const ok = !!group.querySelector("input[type='checkbox']:checked");
+      group.classList.toggle("onsite-invalid", !ok);
+      valid &&= ok;
+    }
+    return valid;
+  };
+  const data = await waitForm({
+    title: loc(healing ? "Loose.HealingTitle" : "Loose.DamageTitle"),
+    icon: healing ? "fa-solid fa-heart-pulse" : "fa-solid fa-burst",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 460,
+    validate
+  });
+  if ( !data ) return null;
+  return {
+    damages: readDamages(parts, data.parts),
+    ignore: !healing && !!data.ignore,
+    actors: actors ? actors.filter((actor, i) => !!data.actors?.[i]) : null
+  };
+}
+
+/**
  * Ask whether a save activity on the same item should also be resolved for the targets that were hit.
  * @param {Activity} saveActivity
  * @param {number} count

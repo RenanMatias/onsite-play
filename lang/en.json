@@ -173,6 +173,14 @@
     "GroupTest": {
       "Title": "Roll at the table: {label}",
       "Hint": "Type the final total (d20 + all modifiers) rolled at the table for each character making the test. Leave blank to skip a character."
+    },
+    "Loose": {
+      "DamageTitle": "Damage",
+      "HealingTitle": "Healing",
+      "DamageHint": "Type the damage rolled at the table, once for everyone, one number per damage type. Resistances are applied to each target.",
+      "HealingHint": "Type the healing rolled at the table, once for everyone.",
+      "Recipients": "Who is affected",
+      "RecipientsRequired": "Choose at least one character."
     }
   }
 }

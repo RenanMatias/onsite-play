@@ -16,6 +16,7 @@ import { getSetting } from "./settings.mjs";
 import { requestFlow } from "./flows.mjs";
 import { onRenderChatMessage, onRenderCheckMessage } from "./chat.mjs";
 import { checkAttackResources } from "./ammunition.mjs";
+import { handleLooseDamage } from "./enrichers.mjs";
 
 /**
  * Is this actor handled by the module: a player character, or an NPC opted in through the API?
@@ -87,10 +88,13 @@ function onPreRollAttack(config) {
 /**
  * A chat-card "Damage" / "Healing" button was clicked for a PC. Save activities run the save flow, heal
  * activities the healing flow; attack and damage activities run the damage-only flow (the GM already knows
- * who was hit). Heal activities roll through Activity#rollDamage too, so they arrive here.
+ * who was hit). Heal activities roll through Activity#rollDamage too, so they arrive here. Rolls without an activity
+ * come from journal links and are handled in enrichers.mjs.
  */
 function onPreRollDamage(config) {
   const activity = config.subject;
+  // Journal damage / healing links (and /damage in chat) roll without an activity.
+  if ( !activity ) return handleLooseDamage(config) ? false : undefined;
   if ( !shouldIntercept(activity) ) return;
   const mode = { save: "save", heal: "heal" }[activity.type] ?? "damage";
   requestFlow({ activity, mode, scaling: config.scaling });

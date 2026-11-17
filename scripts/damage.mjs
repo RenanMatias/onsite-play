@@ -60,6 +60,16 @@ export function getDamageParts(activity, { scaling, ammunition, attackMode }={})
   } catch(err) {
     console.warn(`${MODULE_ID} | Could not prepare damage parts for ${activity.uuid}`, err);
   }
+  return buildDamageParts(rolls);
+}
+
+/**
+ * Describe damage roll configurations ({parts, data, options: {type, types, properties}}) as damage parts.
+ * Used for activities and for journal damage links (DamageRoll process config).
+ * @param {object[]} rolls
+ * @returns {DamagePartInfo[]}
+ */
+export function buildDamageParts(rolls) {
   // The player announces one total per damage type, so parts with the same type options are merged into one
   // field (e.g. a longbow's 1d8 + 3 and the +1 from magic arrows, which dnd5e adds as a separate part).
   const merged = new Map();
