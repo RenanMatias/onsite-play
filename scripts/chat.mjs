@@ -9,44 +9,54 @@ import { restoreAttackResources } from "./ammunition.mjs";
 
 /**
  * Post one summary card for an action.
- * @param {Activity} activity
+ * @param {Activity|{title: string, img: string, actors: Actor[]}} source
+ *   The activity used, or a header for actions without one (journal damage links): its title and image, and the
+ *   actors affected (their owners see the card when the visibility is "GM and actor owners").
  * @param {object[]} entries    Summary entries ({name, img, result, segments, notes}).
  * @param {object[]} snapshots  Undo snapshots.
  * @param {object[]} [resources]  Ammunition / thrown weapons spent (see spendAttackResources).
  * @returns {Promise<ChatMessage|void>}
  */
-export async function postSummary(activity, entries, snapshots=[], resources=[]) {
+export async function postSummary(source, entries, snapshots=[], resources=[]) {
   if ( !entries.length ) return;
-  const actor = activity.actor;
-  const item = activity.item;
+  const isActivity = !!source.item;
+  let header;
+  if ( isActivity ) {
+    const item = source.item;
+    header = {
+      actorName: source.actor.name,
+      itemName: item.name,
+      itemImg: item.img,
+      activityName: (source.name && (source.name !== item.name)) ? source.name : null
+    };
+  } else header = { actorName: null, itemName: source.title, itemImg: source.img, activityName: null };
   const content = await foundry.applications.handlebars.renderTemplate(TEMPLATES.summary, {
-    actorName: actor.name,
-    itemName: item.name,
-    itemImg: item.img,
-    activityName: (activity.name && (activity.name !== item.name)) ? activity.name : null,
+    ...header,
     entries: entries.map(e => ({ ...e, detail: e.segments.filter(Boolean).join(", ") })),
     resources: resources.map(r => loc("Ammo.Spent", { name: r.name, from: r.quantity, to: r.remaining })),
     canUndo: (snapshots.length > 0) || (resources.length > 0)
   });
+  const speaker = isActivity ? ChatMessage.implementation.getSpeaker({ actor: source.actor })
+    : ChatMessage.implementation.getSpeaker({ user: game.user });
   return ChatMessage.implementation.create({
     content,
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    whisper: getWhisperRecipients(actor),
+    speaker,
+    whisper: getWhisperRecipients(isActivity ? [source.actor] : (source.actors ?? [])),
     flags: { [MODULE_ID]: { summary: true, snapshots, resources } }
   });
 }
 
 /**
  * Whisper recipients according to the "visibility" setting (empty array = public).
- * @param {Actor} actor
+ * @param {Actor[]} actors  Actors whose owners may see the card.
  * @returns {string[]}
  */
-function getWhisperRecipients(actor) {
+function getWhisperRecipients(actors) {
   const mode = getSetting("visibility");
   if ( mode === "public" ) return [];
   const gms = game.users.filter(u => u.isGM).map(u => u.id);
   if ( mode === "gm" ) return gms;
-  const owners = game.users.filter(u => !u.isGM && actor.testUserPermission(u, "OWNER")).map(u => u.id);
+  const owners = game.users.filter(u => !u.isGM && actors.some(a => a?.testUserPermission(u, "OWNER"))).map(u => u.id);
   return [...gms, ...owners];
 }
 

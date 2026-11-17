@@ -138,8 +138,7 @@ export async function applyDamageToTarget(target, damages, { ignore=false, multi
   };
 
   // Always work through the token so unlinked tokens change their synthetic actor, not the base actor.
-  const token = fromUuidSync(target.uuid);
-  const actor = token?.actor;
+  const { token, actor } = resolveTarget(target.uuid);
   const hp = actor?.system?.attributes?.hp;
   if ( !hp ) {
     result.noHP = true;
@@ -148,9 +147,9 @@ export async function applyDamageToTarget(target, damages, { ignore=false, multi
 
   const hpSource = actor.system._source.attributes?.hp ?? {};
   const snapshot = {
-    tokenUuid: token.uuid,
+    tokenUuid: token?.uuid ?? null,
     actorUuid: actor.uuid,
-    name: token.name,
+    name: token?.name ?? actor.name,
     hp: { value: hp.value, temp: hp.temp ?? 0, tempmax: hpSource.tempmax ?? 0 },
     statuses: [],
     combatants: []
@@ -200,8 +199,7 @@ export async function applyDamageToTarget(target, damages, { ignore=false, multi
 export async function applyHealingToTarget(target, healing) {
   const result = { healed: 0, tempGained: 0, hpBefore: null, hpAfter: null, noHP: false, revived: false, snapshot: null };
 
-  const token = fromUuidSync(target.uuid);
-  const actor = token?.actor;
+  const { token, actor } = resolveTarget(target.uuid);
   const hp = actor?.system?.attributes?.hp;
   if ( !hp ) {
     result.noHP = true;
@@ -211,9 +209,9 @@ export async function applyHealingToTarget(target, healing) {
   const hpSource = actor.system._source.attributes?.hp ?? {};
   const death = actor.system.attributes.death;
   const snapshot = {
-    tokenUuid: token.uuid,
+    tokenUuid: token?.uuid ?? null,
     actorUuid: actor.uuid,
-    name: token.name,
+    name: token?.name ?? actor.name,
     hp: { value: hp.value, temp: hp.temp ?? 0, tempmax: hpSource.tempmax ?? 0 },
     death: death ? { success: death.success ?? 0, failure: death.failure ?? 0 } : null,
     statuses: [],
@@ -254,9 +252,20 @@ export async function applyHealingToTarget(target, healing) {
 }
 
 /**
+ * Resolve a target UUID: a TokenDocument (its actor, synthetic for unlinked tokens) or an Actor without a token.
+ * @param {string} uuid
+ * @returns {{token: TokenDocument|null, actor: Actor|null}}
+ */
+function resolveTarget(uuid) {
+  const doc = fromUuidSync(uuid);
+  if ( doc instanceof Actor ) return { token: null, actor: doc };
+  return { token: doc ?? null, actor: doc?.actor ?? null };
+}
+
+/**
  * A target just reached 0 HP. NPCs (and other non-characters) get the Defeated status and are marked
  * defeated / removed from combat. Characters get Unconscious instead (death saves), and stay in combat.
- * @param {TokenDocument} token
+ * @param {TokenDocument|null} token  null for an actor without a token on the scene.
  * @param {Actor} actor
  * @param {object} snapshot  Mutated with the statuses and combatants changed.
  * @returns {Promise<Partial<DamageResult>>}
@@ -279,7 +288,7 @@ async function handleDowned(token, actor, snapshot) {
     if ( actor.statuses.has(status) ) snapshot.statuses.push(status);
   }
 
-  if ( !isPC ) Object.assign(out, await defeatCombatants(token, snapshot));
+  if ( !isPC && token ) Object.assign(out, await defeatCombatants(token, snapshot));
   return out;
 }
 
@@ -345,7 +354,7 @@ async function defeatCombatants(token, snapshot) {
 export async function undoSnapshots(snapshots) {
   const failures = [];
   for ( const snap of [...snapshots].reverse() ) {
-    const token = fromUuidSync(snap.tokenUuid);
+    const token = snap.tokenUuid ? fromUuidSync(snap.tokenUuid) : null;
     const actor = token?.actor ?? fromUuidSync(snap.actorUuid);
     if ( !actor ) {
       failures.push(snap.name);

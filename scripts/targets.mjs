@@ -6,8 +6,9 @@ import { promptForTargets } from "./dialogs.mjs";
 
 /**
  * @typedef TargetInfo
- * @property {string} uuid            TokenDocument UUID (always the token, so unlinked tokens use their own actor).
- * @property {TokenDocument} token
+ * @property {string} uuid            TokenDocument UUID (the token whenever there is one, so unlinked tokens use their
+ *                                    own actor), or an Actor UUID for an actor without a token on the scene.
+ * @property {TokenDocument|null} token
  * @property {Actor} actor            token.actor — the synthetic actor for unlinked tokens.
  * @property {string} name
  * @property {string} img
@@ -33,6 +34,31 @@ export function buildTargetInfo(tokenDoc) {
     actor,
     name: tokenDoc.name,
     img: tokenDoc.texture?.src || actor.img,
+    ac: Number.isFinite(ac) ? ac : null,
+    hasHP: !!attributes.hp,
+    hp: attributes.hp?.value ?? null,
+    totalCover: actor.statuses?.has("coverTotal") ?? false
+  };
+}
+
+/**
+ * Build a descriptor for an actor picked from a list: its token on the viewed scene when there is one, otherwise
+ * the actor itself (no token).
+ * @param {Actor} actor
+ * @returns {TargetInfo|null}
+ */
+export function buildActorTargetInfo(actor) {
+  const token = actor?.getActiveTokens(false, true)[0];
+  if ( token ) return buildTargetInfo(token);
+  if ( !actor ) return null;
+  const attributes = actor.system?.attributes ?? {};
+  const ac = attributes.ac?.value;
+  return {
+    uuid: actor.uuid,
+    token: null,
+    actor,
+    name: actor.name,
+    img: actor.img,
     ac: Number.isFinite(ac) ? ac : null,
     hasHP: !!attributes.hp,
     hp: attributes.hp?.value ?? null,

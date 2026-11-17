@@ -2,7 +2,7 @@
   <header class="onsite-summary-header">
     <img src="{{itemImg}}" alt="">
     <div>
-      <strong>{{actorName}}</strong> — {{itemName}}
+      {{#if actorName}}<strong>{{actorName}}</strong> — {{/if}}{{itemName}}
       {{#if activityName}}<span class="onsite-activity">({{activityName}})</span>{{/if}}
     </div>
   </header>
