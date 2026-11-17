@@ -97,31 +97,32 @@ export function buildDamageParts(rolls) {
   return Array.from(merged.values());
 }
 
-/** Limits for formulas analyzed by diceRange (dice per term / terms, faces per die). */
-const MAX_DICE = 100;
-const MAX_FACES = 1000;
+/** Simple formulas only: "1d10 + 5", "2d6+3", "1d6 + 1d4 - 1", "5". Anything else is not analyzed. */
+const SIMPLE_FORMULA = /^\s*[+-]?\s*(\d{1,3}d\d{1,4}|\d{1,4})(\s*[+-]\s*(\d{1,3}d\d{1,4}|\d{1,4}))*\s*$/i;
 
 /**
  * Split a damage formula into the dice rolled at the table and the fixed modifier added to them, e.g.
- * "1d10 + 5" → dice 1–10, modifier 5. Dice are assumed to be added (no subtracted or kept dice).
+ * "1d10 + 5" → dice 1–10, modifier 5. Computed from the text, without evaluating a Roll: formulas can come from a
+ * player's query, so only simple sums of dice and numbers are accepted (fail closed).
  * @param {string} formula
- * @returns {{min: number, max: number, modifier: number}|null}  min = max = 0 when there are no dice; null when
- *                                                                the formula can't be evaluated.
+ * @returns {{min: number, max: number, modifier: number}|null}  min = max = 0 when there are no dice; null for any
+ *                                                                other formula (subtracted dice, modifiers, pools…).
  */
 export function diceRange(formula) {
-  try {
-    // Formulas can come from a player's query: refuse absurd dice before evaluating anything.
-    const parsed = new Roll(formula);
-    const tooBig = parsed.dice.some(die => !(die.number <= MAX_DICE) || !(die.faces <= MAX_FACES));
-    if ( tooBig || (parsed.dice.length > MAX_DICE) ) return null;
-    const low = new Roll(formula).evaluateSync({ minimize: true });
-    const high = new Roll(formula).evaluateSync({ maximize: true });
-    const sum = roll => roll.dice.reduce((total, die) => total + die.total, 0);
-    const min = sum(low);
-    return { min, max: sum(high), modifier: low.total - min };
-  } catch {
-    return null;
+  if ( (typeof formula !== "string") || !SIMPLE_FORMULA.test(formula) ) return null;
+  const range = { min: 0, max: 0, modifier: 0 };
+  for ( const [, sign, term] of formula.replace(/\s+/g, "").matchAll(/([+-]?)([^+-]+)/g) ) {
+    const negative = sign === "-";
+    const dice = term.toLowerCase().split("d");
+    if ( dice.length === 2 ) {
+      const [number, faces] = dice.map(Number);
+      if ( negative || !faces ) return null;
+      range.min += number;
+      range.max += number * faces;
+    }
+    else range.modifier += negative ? -Number(term) : Number(term);
   }
+  return range;
 }
 
 /**
