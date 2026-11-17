@@ -147,7 +147,8 @@
       "NoTargets": "Nenhum token está marcado como alvo.",
       "NoActorTargets": "Nenhum dos tokens marcados tem um ator.",
       "NoDamageParts": "Esta atividade não tem dano para aplicar.",
-      "NoHealingParts": "Esta atividade não tem cura para aplicar."
+      "NoHealingParts": "Esta atividade não tem cura para aplicar.",
+      "NoCharacters": "Não há personagens de jogadores neste mundo."
     },
     "Info": {
       "SentToGM": "Enviado ao Mestre para resolver."
@@ -168,6 +169,10 @@
       "Total": "Total",
       "Nat20": "20 natural",
       "Nat1": "1 natural"
+    },
+    "GroupTest": {
+      "Title": "Rolagem na mesa: {label}",
+      "Hint": "Digite o total final (d20 + todos os modificadores) rolado na mesa para cada personagem que faz o teste. Deixe em branco para pular um personagem."
     }
   }
 }

@@ -18,6 +18,7 @@ export const TEMPLATES = {
   save: `modules/${MODULE_ID}/templates/save-dialog.hbs`,
   initiative: `modules/${MODULE_ID}/templates/initiative-dialog.hbs`,
   d20Test: `modules/${MODULE_ID}/templates/d20-test-dialog.hbs`,
+  groupTest: `modules/${MODULE_ID}/templates/group-test-dialog.hbs`,
   summary: `modules/${MODULE_ID}/templates/summary-card.hbs`
 };
 

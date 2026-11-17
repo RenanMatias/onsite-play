@@ -1,0 +1,199 @@
+/**
+ * Journal links (dnd5e enrichers) rolled at the table.
+ *
+ * Interception points (verified in dnd5e 6.1.1 source):
+ *  - Check / save links (`[[/check]]`, `[[/skill]]`, `[[/tool]]`, `[[/save]]`, `[[/concentration]]`) are
+ *      `[data-action="roll"]` elements handled by a click listener that calls an internal function (rollCheckSave).
+ *      It rolls for the controlled tokens or the user's character, and only warns when there are neither. There is
+ *      no hook for that case, so a capture-phase click listener on the document catches it first, asks the GM for
+ *      every player character's total in one dialog, and calls the normal dnd5e roll methods with the result preset
+ *      (see `result` in checks.mjs). With a token selected or a character assigned, dnd5e runs as usual.
+ *      The link's data is read like dnd5e's getRollActionDataset: the `.roll-link-group` dataset, then the clicked
+ *      `.roll-link` dataset on top (multi-skill links have one sub-link per skill).
+ */
+import { MODULE_ID, loc } from "./constants.mjs";
+import { getSetting } from "./settings.mjs";
+import { promptGroupTest } from "./dialogs.mjs";
+
+/** Link types handled as checks or saves. */
+const TEST_TYPES = new Set(["check", "skill", "tool", "save", "concentration"]);
+
+/**
+ * @typedef EnricherTest
+ * @property {"check"|"skill"|"tool"|"save"|"concentration"} type
+ * @property {string|null} ability
+ * @property {string|null} skill
+ * @property {string|null} tool
+ * @property {string|null} usingTool   Tool used with a skill (2024 rules).
+ * @property {number|null} dc
+ * @property {string} label            Link text, e.g. "DC 12 Strength (Athletics)".
+ */
+
+/** Register the journal link listener and queries. Called during "init". */
+export function registerEnrichers() {
+  document.addEventListener("click", onLinkClick, { capture: true });
+  CONFIG.queries[`${MODULE_ID}.enricherTest`] = handleEnricherTestQuery;
+}
+
+/* -------------------------------------------- */
+/*  Checks and saves                            */
+/* -------------------------------------------- */
+
+/**
+ * Read a check or save link.
+ * @param {HTMLElement} link  The clicked `[data-action="roll"]` element.
+ * @returns {EnricherTest|null}  null for other link types (damage, attack, item…).
+ */
+function readTestLink(link) {
+  const dataset = {
+    ...(link.closest(".roll-link-group")?.dataset ?? {}),
+    ...(link.closest(".roll-link")?.dataset ?? {})
+  };
+  if ( !TEST_TYPES.has(dataset.type) ) return null;
+  return {
+    type: dataset.type,
+    ability: dataset.ability || null,
+    skill: dataset.skill || null,
+    tool: dataset.tool || null,
+    usingTool: dataset.usingTool || null,
+    dc: Number.isNumeric(dataset.dc) ? Number(dataset.dc) : null,
+    label: link.textContent.trim()
+  };
+}
+
+/**
+ * Capture-phase click handler: take over check / save links that dnd5e would reject for lack of an actor.
+ * @param {PointerEvent} event
+ */
+function onLinkClick(event) {
+  const link = event.target.closest?.('[data-action="roll"]');
+  if ( !link ) return;
+  const test = readTestLink(link);
+  if ( !test ) return;
+  if ( !getSetting("enabled") || !getSetting("manualChecks") || !game.users.activeGM ) return;
+  if ( canvas.tokens?.controlled.length || game.user.character ) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  window.getSelection().empty();
+  if ( game.user.isGM ) runGroupTest(test);
+  else askGM(`${MODULE_ID}.enricherTest`, { test });
+}
+
+/**
+ * Ask for the totals of every player character and roll the test for those that were filled in.
+ * @param {EnricherTest} test
+ */
+async function runGroupTest(test) {
+  try {
+    const actors = game.actors.filter(a => a.type === "character")
+      .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
+    if ( !actors.length ) {
+      ui.notifications.warn(loc("Warn.NoCharacters"));
+      return;
+    }
+    const results = await promptGroupTest({
+      label: test.label,
+      dc: test.dc,
+      actors: actors.map(actor => ({ actor, bonus: testBonus(actor, test) }))
+    });
+    if ( !results?.length ) return;
+    await rollTest(test, results);
+  } catch(err) {
+    console.error(`${MODULE_ID} | Journal link roll failed`, err);
+    ui.notifications.error(loc("Warn.FlowError"));
+  }
+}
+
+/**
+ * The actor's bonus for a test, shown as a hint in the dialog.
+ * @param {Actor} actor
+ * @param {EnricherTest} test
+ * @returns {number|null}
+ */
+function testBonus(actor, test) {
+  const system = actor.system ?? {};
+  let value;
+  switch ( test.type ) {
+    case "skill": value = system.skills?.[test.skill]?.total; break;
+    case "tool": value = system.tools?.[test.tool]?.total; break;
+    case "save": value = system.abilities?.[test.ability]?.save?.value; break;
+    case "check": value = system.abilities?.[test.ability]?.mod; break;
+    case "concentration": value = system.attributes?.concentration?.save; break;
+  }
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Roll the test for each actor with the typed result, like dnd5e's rollCheckSave does.
+ * @param {EnricherTest} test
+ * @param {{actor: Actor, total: number|null, nat: string}[]} results
+ */
+async function rollTest(test, results) {
+  for ( const { actor, total, nat } of results ) {
+    const config = { [MODULE_ID]: { result: { total, nat } } };
+    if ( test.dc !== null ) config.target = test.dc;
+    if ( test.ability ) config.ability = test.ability;
+    switch ( test.type ) {
+      case "check": await actor.rollAbilityCheck(config); break;
+      case "skill": await actor.rollSkill({ ...config, skill: test.skill, tool: test.usingTool ?? undefined }); break;
+      case "tool": await actor.rollToolCheck({ ...config, tool: test.tool }); break;
+      case "save": await actor.rollSavingThrow(config); break;
+      case "concentration": await actor.rollConcentration(config); break;
+    }
+  }
+}
+
+/**
+ * Query handler (registered in CONFIG.queries) run on the active GM's client.
+ * Returns immediately; the dialog continues in the background so the query never times out.
+ * @param {{test: EnricherTest}} data
+ * @returns {boolean}
+ */
+function handleEnricherTestQuery(data) {
+  if ( !game.user.isActiveGM ) throw new Error("Only the active GM can resolve Onsite Play rolls.");
+  const t = data?.test ?? {};
+  const pick = (value, choices) => {
+    if ( (value === null) || (value === undefined) || (value === "") ) return null;
+    if ( !(value in choices) ) throw new Error(`Invalid value "${value}".`);
+    return value;
+  };
+  if ( !TEST_TYPES.has(t.type) ) throw new Error(`Invalid test type "${t.type}".`);
+  const ability = t.ability === "spellcasting" ? "spellcasting" : pick(t.ability, CONFIG.DND5E.abilities);
+  const test = {
+    type: t.type,
+    ability,
+    skill: pick(t.skill, CONFIG.DND5E.skills),
+    tool: pick(t.tool, CONFIG.DND5E.tools),
+    usingTool: pick(t.usingTool, CONFIG.DND5E.tools),
+    dc: Number.isFinite(t.dc) ? t.dc : null,
+    label: String(t.label ?? "")
+  };
+  runGroupTest(test);
+  return true;
+}
+
+/* -------------------------------------------- */
+/*  Player side                                 */
+/* -------------------------------------------- */
+
+/**
+ * Send a journal link request to the active GM.
+ * @param {string} query  Query name.
+ * @param {object} data
+ */
+async function askGM(query, data) {
+  const gm = game.users.activeGM;
+  if ( !gm ) {
+    ui.notifications.warn(loc("Warn.NoGM"));
+    return;
+  }
+  try {
+    await gm.query(query, data);
+    ui.notifications.info(loc("Info.SentToGM"));
+  } catch(err) {
+    console.error(`${MODULE_ID} | Could not send the roll to the GM`, err);
+    ui.notifications.error(loc("Warn.QueryFailed"));
+  }
+}

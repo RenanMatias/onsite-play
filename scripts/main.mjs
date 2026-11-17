@@ -8,6 +8,7 @@ import { registerHooks } from "./hooks.mjs";
 import { handleFlowQuery } from "./flows.mjs";
 import { registerInitiative } from "./initiative.mjs";
 import { registerChecks } from "./checks.mjs";
+import { registerEnrichers } from "./enrichers.mjs";
 
 Hooks.once("init", () => {
   registerSettings();
@@ -18,6 +19,7 @@ Hooks.once("init", () => {
   registerHooks();
   registerInitiative();
   registerChecks();
+  registerEnrichers();
   foundry.applications.handlebars.loadTemplates(Object.values(TEMPLATES));
 
   // Small public API (also used for the optional NPC opt-in).

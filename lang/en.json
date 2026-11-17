@@ -147,7 +147,8 @@
       "NoTargets": "No tokens are targeted.",
       "NoActorTargets": "None of the targeted tokens has an actor.",
       "NoDamageParts": "This activity has no damage to apply.",
-      "NoHealingParts": "This activity has no healing to apply."
+      "NoHealingParts": "This activity has no healing to apply.",
+      "NoCharacters": "There are no player characters in this world."
     },
     "Info": {
       "SentToGM": "Sent to the GM to resolve."
@@ -168,6 +169,10 @@
       "Total": "Total",
       "Nat20": "Natural 20",
       "Nat1": "Natural 1"
+    },
+    "GroupTest": {
+      "Title": "Roll at the table: {label}",
+      "Hint": "Type the final total (d20 + all modifiers) rolled at the table for each character making the test. Leave blank to skip a character."
     }
   }
 }

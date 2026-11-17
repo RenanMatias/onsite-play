@@ -435,6 +435,53 @@ export async function promptD20Test(actor, { label, target, formulas }) {
 }
 
 /**
+ * Ask for the result of one test (from a journal link) for several actors at once. Rows left blank are skipped.
+ * @param {object} request
+ * @param {string} request.label                              What is rolled, e.g. "Athletics".
+ * @param {number|null} request.dc
+ * @param {{actor: Actor, bonus: number|null}[]} request.actors
+ * @returns {Promise<{actor: Actor, total: number|null, nat: "none"|"nat20"|"nat1"}[]|null>}
+ *   The filled rows only, or null if canceled.
+ */
+export async function promptGroupTest({ label, dc, actors }) {
+  const content = await renderTemplate(TEMPLATES.groupTest, {
+    hint: loc("GroupTest.Hint"),
+    dc,
+    rows: actors.map(({ actor, bonus }, i) => ({
+      name: actor.name,
+      img: actor.img,
+      bonus: bonus === null ? null : dnd5e.utils.formatNumber(bonus, { signDisplay: "always" }),
+      first: i === 0,
+      totalName: `rows.${i}.total`,
+      natName: `rows.${i}.nat`
+    }))
+  });
+  const isFilled = (total, nat) => (toNumber(total) !== null) || ["nat20", "nat1"].includes(nat);
+  const data = await waitForm({
+    title: loc("GroupTest.Title", { label }),
+    icon: "fa-solid fa-dice-d20",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 520,
+    validate: form => actors.some((a, i) => isFilled(
+      form.querySelector(`[name="rows.${i}.total"]`)?.value,
+      form.querySelector(`[name="rows.${i}.nat"]:checked`)?.value
+    ))
+  });
+  if ( !data ) return null;
+  return actors.flatMap(({ actor }, i) => {
+    const row = data.rows?.[i] ?? {};
+    if ( !isFilled(row.total, row.nat) ) return [];
+    const total = toNumber(row.total);
+    return [{
+      actor,
+      total: total === null ? null : Math.floor(total),
+      nat: ["nat20", "nat1"].includes(row.nat) ? row.nat : "none"
+    }];
+  });
+}
+
+/**
  * Ask whether a save activity on the same item should also be resolved for the targets that were hit.
  * @param {Activity} saveActivity
  * @param {number} count
