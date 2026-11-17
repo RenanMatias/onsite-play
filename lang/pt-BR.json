@@ -184,6 +184,15 @@
       "Recipients": "Quem é afetado",
       "RecipientsRequired": "Escolha pelo menos um personagem.",
       "Required": "Digite o valor dos dados, dentro do intervalo indicado."
+    },
+    "Status": {
+      "Title": "Aplicar condição: {status}",
+      "Hint": "Escolha os personagens de jogadores que recebem {status}. Os personagens dos tokens selecionados já vêm marcados.",
+      "Already": "já tem",
+      "Level": "nível {level}",
+      "AlreadyHas": "já está com {status}",
+      "LevelChange": "{status} {from} → {to}",
+      "AtMax": "{status} já está no nível {level}"
     }
   }
 }

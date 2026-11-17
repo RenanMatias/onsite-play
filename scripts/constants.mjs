@@ -20,6 +20,7 @@ export const TEMPLATES = {
   d20Test: `modules/${MODULE_ID}/templates/d20-test-dialog.hbs`,
   groupTest: `modules/${MODULE_ID}/templates/group-test-dialog.hbs`,
   looseDamage: `modules/${MODULE_ID}/templates/loose-damage-dialog.hbs`,
+  applyStatus: `modules/${MODULE_ID}/templates/apply-status-dialog.hbs`,
   summary: `modules/${MODULE_ID}/templates/summary-card.hbs`
 };
 

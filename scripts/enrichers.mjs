@@ -14,6 +14,7 @@
  *      DamageRoll without an activity: dnd5e.preRollDamageV2 fires with no `config.subject`. hooks.mjs cancels that
  *      roll when handleLooseDamage takes over. The damage is typed once and applied to the controlled tokens, or to
  *      the player characters chosen in the dialog.
+ *  - Condition apply buttons (`&Reference[frightened]`) are handled in conditions.mjs; the click is caught here.
  */
 import { MODULE_ID, loc } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
@@ -22,6 +23,7 @@ import { buildDamageParts, diceRange } from "./damage.mjs";
 import { buildActorTargetInfo, buildTargetInfo } from "./targets.mjs";
 import { applyAndDescribe, createEntry, healAndDescribe } from "./flows.mjs";
 import { describeD20Roll, postSummary } from "./chat.mjs";
+import { getStatusEffect, runApplyStatus } from "./conditions.mjs";
 
 /** Link types handled as checks or saves. */
 const TEST_TYPES = new Set(["check", "skill", "tool", "save", "concentration"]);
@@ -42,6 +44,7 @@ export function registerEnrichers() {
   document.addEventListener("click", onLinkClick, { capture: true });
   CONFIG.queries[`${MODULE_ID}.enricherTest`] = handleEnricherTestQuery;
   CONFIG.queries[`${MODULE_ID}.looseDamage`] = handleLooseDamageQuery;
+  CONFIG.queries[`${MODULE_ID}.applyStatus`] = handleApplyStatusQuery;
 }
 
 /* -------------------------------------------- */
@@ -94,6 +97,8 @@ export function linkTestType(event) {
  * @param {PointerEvent} event
  */
 function onLinkClick(event) {
+  const statusLink = event.target.closest?.('[data-action="applyStatus"][data-status]');
+  if ( statusLink ) return onApplyStatusClick(event, statusLink.dataset.status);
   const link = event.target.closest?.('[data-action="roll"]');
   if ( !link ) return;
   const test = readTestLink(link);
@@ -107,6 +112,39 @@ function onLinkClick(event) {
   window.getSelection().empty();
   if ( game.user.isGM ) runGroupTest(test);
   else askGM(`${MODULE_ID}.enricherTest`, { test });
+}
+
+/**
+ * The apply button of a condition reference: always choose the player characters in a dialog. Those of the selected
+ * tokens are pre-checked.
+ * @param {PointerEvent} event
+ * @param {string} status
+ */
+function onApplyStatusClick(event, status) {
+  if ( !getSetting("enabled") || !game.users.activeGM || !getStatusEffect(status) ) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  window.getSelection().empty();
+  const preselected = [...new Set((canvas.tokens?.controlled ?? [])
+    .map(token => token.actor).filter(actor => actor?.type === "character").map(actor => actor.uuid))];
+  if ( game.user.isGM ) runApplyStatus({ status, preselected });
+  else askGM(`${MODULE_ID}.applyStatus`, { status, preselected });
+}
+
+/**
+ * Query handler (registered in CONFIG.queries) run on the active GM's client.
+ * Returns immediately; the dialog continues in the background so the query never times out.
+ * @param {{status: string, preselected: string[]}} data
+ * @returns {boolean}
+ */
+function handleApplyStatusQuery(data) {
+  if ( !game.user.isActiveGM ) throw new Error("Only the active GM can apply Onsite Play conditions.");
+  const status = String(data?.status ?? "");
+  if ( !getStatusEffect(status) ) throw new Error(`Invalid status "${status}".`);
+  const preselected = (Array.isArray(data.preselected) ? data.preselected : []).filter(u => typeof u === "string");
+  runApplyStatus({ status, preselected });
+  return true;
 }
 
 /**

@@ -184,6 +184,15 @@
       "Recipients": "Who is affected",
       "RecipientsRequired": "Choose at least one character.",
       "Required": "Enter the dice rolled, within the range shown."
+    },
+    "Status": {
+      "Title": "Apply condition: {status}",
+      "Hint": "Choose the player characters who receive {status}. Characters of the selected tokens are already checked.",
+      "Already": "already has it",
+      "Level": "level {level}",
+      "AlreadyHas": "already {status}",
+      "LevelChange": "{status} {from} → {to}",
+      "AtMax": "{status} already at level {level}"
     }
   }
 }

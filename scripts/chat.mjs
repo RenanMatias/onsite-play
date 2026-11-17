@@ -6,6 +6,7 @@ import { getSetting } from "./settings.mjs";
 import { undoSnapshots } from "./damage.mjs";
 import { confirmUndo } from "./dialogs.mjs";
 import { restoreAttackResources } from "./ammunition.mjs";
+import { undoConditions } from "./conditions.mjs";
 
 /**
  * Post one summary card for an action.
@@ -15,9 +16,10 @@ import { restoreAttackResources } from "./ammunition.mjs";
  * @param {object[]} entries    Summary entries ({name, img, result, segments, notes}).
  * @param {object[]} snapshots  Undo snapshots.
  * @param {object[]} [resources]  Ammunition / thrown weapons spent (see spendAttackResources).
+ * @param {object[]} [conditions]  Conditions added from journal links (see runApplyStatus).
  * @returns {Promise<ChatMessage|void>}
  */
-export async function postSummary(source, entries, snapshots=[], resources=[]) {
+export async function postSummary(source, entries, snapshots=[], resources=[], conditions=[]) {
   if ( !entries.length ) return;
   const isActivity = !!source.item;
   let header;
@@ -34,7 +36,7 @@ export async function postSummary(source, entries, snapshots=[], resources=[]) {
     ...header,
     entries: entries.map(e => ({ ...e, detail: e.segments.filter(Boolean).join(", ") })),
     resources: resources.map(r => loc("Ammo.Spent", { name: r.name, from: r.quantity, to: r.remaining })),
-    canUndo: (snapshots.length > 0) || (resources.length > 0)
+    canUndo: (snapshots.length > 0) || (resources.length > 0) || (conditions.length > 0)
   });
   // Without an activity the card is spoken by the user: getSpeaker() would fall back to a controlled token,
   // which may be one of the targets.
@@ -44,7 +46,7 @@ export async function postSummary(source, entries, snapshots=[], resources=[]) {
     content,
     speaker,
     whisper: getWhisperRecipients(isActivity ? [source.actor] : (source.actors ?? [])),
-    flags: { [MODULE_ID]: { summary: true, snapshots, resources } }
+    flags: { [MODULE_ID]: { summary: true, snapshots, resources, conditions } }
   });
 }
 
@@ -145,7 +147,8 @@ async function undoSummary(message) {
   try {
     const failures = [
       ...await undoSnapshots(flags.snapshots ?? []),
-      ...await restoreAttackResources(flags.resources ?? [])
+      ...await restoreAttackResources(flags.resources ?? []),
+      ...await undoConditions(flags.conditions ?? [])
     ];
     await message.setFlag(MODULE_ID, "undone", true);
     if ( failures.length ) ui.notifications.warn(loc("Undo.Missing", { names: failures.join(", ") }));

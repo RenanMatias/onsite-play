@@ -565,6 +565,40 @@ export async function promptLooseDamage({ parts, healing, actors, recipients=[] 
 }
 
 /**
+ * Ask which player characters receive a condition (journal condition links).
+ * @param {object} request
+ * @param {string} request.label   Condition name.
+ * @param {string} request.img     Condition icon.
+ * @param {{actor: Actor, state: string|null, checked: boolean}[]} request.actors
+ *   `state` describes the current condition (e.g. "level 2"), `checked` pre-checks the row.
+ * @returns {Promise<Actor[]|null>}  The checked actors, or null if canceled.
+ */
+export async function promptApplyStatus({ label, img, actors }) {
+  const content = await renderTemplate(TEMPLATES.applyStatus, {
+    hint: loc("Status.Hint", { status: label }),
+    img,
+    actors: actors.map(({ actor, state, checked }, i) => ({
+      name: actor.name, img: actor.img, state, checked, checkName: `actors.${i}`
+    }))
+  });
+  const data = await waitForm({
+    title: loc("Status.Title", { status: label }),
+    icon: "fa-solid fa-person-burst",
+    content,
+    okLabel: loc("Buttons.Apply"),
+    width: 460,
+    validate: form => {
+      const group = form.querySelector("[data-onsite-recipients]");
+      const ok = !!group?.querySelector("input[type='checkbox']:checked");
+      group?.classList.toggle("onsite-invalid", !ok);
+      return ok;
+    }
+  });
+  if ( !data ) return null;
+  return actors.filter((entry, i) => !!data.actors?.[i]).map(entry => entry.actor);
+}
+
+/**
  * Ask whether a save activity on the same item should also be resolved for the targets that were hit.
  * @param {Activity} saveActivity
  * @param {number} count
