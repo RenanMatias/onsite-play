@@ -102,15 +102,7 @@ export function onRenderCheckMessage(message, html) {
   html.querySelectorAll(".dice-roll").forEach((el, i) => {
     const roll = message.rolls[i];
     if ( !roll ) return;
-    const natLabel = roll.isCritical ? loc("Summary.Nat20") : roll.isFumble ? loc("Summary.Nat1") : null;
-    const total = natLabel ? `${roll.total} (${natLabel})` : `${roll.total}`;
-    const target = roll.options.target;
-    const segments = [Number.isNumeric(target) ? loc("Summary.CheckVs", { total, dc: target }) : total];
-    let result = "";
-    if ( Number.isNumeric(target) ) {
-      result = roll.isSuccess ? "pass" : "fail";
-      segments.push(loc(message.type === "save" ? `Result.${result}` : `Result.${result === "pass" ? "success" : "failure"}`));
-    }
+    const { segments, result } = describeD20Roll(roll, message.type === "save");
     const summary = document.createElement("div");
     summary.classList.add("onsite-summary");
     summary.innerHTML = `
@@ -121,6 +113,25 @@ export function onRenderCheckMessage(message, html) {
       </ul>`;
     el.replaceWith(summary);
   });
+}
+
+/**
+ * Describe a check or save rolled at the table: "14 (natural 20) vs DC 15", "SAVED".
+ * @param {D20Roll} roll
+ * @param {boolean} isSave  Saving throws read SAVED / FAILED, checks SUCCESS / FAILURE.
+ * @returns {{segments: string[], result: string}}  `result` is the CSS modifier (pass, fail or "").
+ */
+export function describeD20Roll(roll, isSave) {
+  const natLabel = roll.isCritical ? loc("Summary.Nat20") : roll.isFumble ? loc("Summary.Nat1") : null;
+  const total = natLabel ? `${roll.total} (${natLabel})` : `${roll.total}`;
+  const target = roll.options.target;
+  const segments = [Number.isNumeric(target) ? loc("Summary.CheckVs", { total, dc: target }) : total];
+  let result = "";
+  if ( Number.isNumeric(target) ) {
+    result = roll.isSuccess ? "pass" : "fail";
+    segments.push(loc(isSave ? `Result.${result}` : `Result.${result === "pass" ? "success" : "failure"}`));
+  }
+  return { segments, result };
 }
 
 /**

@@ -21,7 +21,7 @@ import { promptGroupTest, promptLooseDamage } from "./dialogs.mjs";
 import { buildDamageParts } from "./damage.mjs";
 import { buildActorTargetInfo, buildTargetInfo } from "./targets.mjs";
 import { applyAndDescribe, createEntry, healAndDescribe } from "./flows.mjs";
-import { postSummary } from "./chat.mjs";
+import { describeD20Roll, postSummary } from "./chat.mjs";
 
 /** Link types handled as checks or saves. */
 const TEST_TYPES = new Set(["check", "skill", "tool", "save", "concentration"]);
@@ -155,22 +155,37 @@ function testBonus(actor, test) {
 }
 
 /**
- * Roll the test for each actor with the typed result, like dnd5e's rollCheckSave does.
+ * Roll the test for each actor with the typed result, like dnd5e's rollCheckSave does. With more than one actor,
+ * dnd5e's roll cards are not posted: one summary card lists every result instead.
  * @param {EnricherTest} test
  * @param {{actor: Actor, total: number|null, nat: string}[]} results
  */
 async function rollTest(test, results) {
+  const merged = results.length > 1;
+  const message = merged ? { create: false } : {};
+  const entries = [];
   for ( const { actor, total, nat } of results ) {
     const config = { [MODULE_ID]: { result: { total, nat } } };
     if ( test.dc !== null ) config.target = test.dc;
     if ( test.ability ) config.ability = test.ability;
+    let rolls;
     switch ( test.type ) {
-      case "check": await actor.rollAbilityCheck(config); break;
-      case "skill": await actor.rollSkill({ ...config, skill: test.skill, tool: test.usingTool ?? undefined }); break;
-      case "tool": await actor.rollToolCheck({ ...config, tool: test.tool }); break;
-      case "save": await actor.rollSavingThrow(config); break;
-      case "concentration": await actor.rollConcentration(config); break;
+      case "check": rolls = await actor.rollAbilityCheck(config, {}, message); break;
+      case "skill":
+        rolls = await actor.rollSkill({ ...config, skill: test.skill, tool: test.usingTool ?? undefined }, {}, message);
+        break;
+      case "tool": rolls = await actor.rollToolCheck({ ...config, tool: test.tool }, {}, message); break;
+      case "save": rolls = await actor.rollSavingThrow(config, {}, message); break;
+      case "concentration": rolls = await actor.rollConcentration(config, {}, message); break;
     }
+    const roll = rolls?.[0];
+    if ( !merged || !roll ) continue;
+    const { segments, result } = describeD20Roll(roll, ["save", "concentration"].includes(test.type));
+    entries.push({ name: actor.name, img: actor.img, result, segments, notes: [] });
+  }
+  if ( merged ) {
+    await postSummary({ title: test.label, img: "icons/svg/d20-highlight.svg", actors: results.map(r => r.actor) },
+      entries);
   }
 }
 
