@@ -245,8 +245,10 @@ async function runLooseDamage({ parts, tokenUuids }) {
     let targets;
     let input;
     if ( tokens.length ) {
-      input = await promptLooseDamage({ parts: damageParts, healing, actors: null });
       targets = tokens.map(buildTargetInfo);
+      input = await promptLooseDamage({
+        parts: damageParts, healing, actors: null, recipients: targets.filter(Boolean).map(t => t.name)
+      });
     } else {
       const actors = game.actors.filter(a => a.type === "character")
         .sort((a, b) => a.name.localeCompare(b.name, game.i18n.lang));
@@ -282,10 +284,12 @@ async function runLooseDamage({ parts, tokenUuids }) {
 /**
  * Query handler (registered in CONFIG.queries) run on the active GM's client.
  * Returns immediately; the dialog continues in the background so the query never times out.
+ * Only tokens whose actor the requesting user owns are kept.
  * @param {{parts: LoosePart[], tokenUuids: string[]}} data
+ * @param {{user: User}} context
  * @returns {boolean}
  */
-function handleLooseDamageQuery(data) {
+function handleLooseDamageQuery(data, { user }) {
   if ( !game.user.isActiveGM ) throw new Error("Only the active GM can resolve Onsite Play rolls.");
   const parts = Array.isArray(data?.parts) ? data.parts : [];
   if ( !parts.length ) throw new Error("No damage requested.");
@@ -298,7 +302,11 @@ function handleLooseDamageQuery(data) {
     }
     return { formula: String(part?.formula ?? ""), types };
   });
-  const tokenUuids = Array.isArray(data.tokenUuids) ? data.tokenUuids.filter(u => typeof u === "string") : [];
+  const tokenUuids = (Array.isArray(data.tokenUuids) ? data.tokenUuids : []).filter(uuid => {
+    if ( typeof uuid !== "string" ) return false;
+    const doc = fromUuidSync(uuid);
+    return (doc?.documentName === "Token") && !!doc.actor?.testUserPermission(user, "OWNER");
+  });
   runLooseDamage({ parts: valid, tokenUuids });
   return true;
 }

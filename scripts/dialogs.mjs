@@ -487,16 +487,18 @@ export async function promptGroupTest({ label, dc, actors }) {
  * @param {DamagePartInfo[]} request.parts
  * @param {boolean} request.healing
  * @param {Actor[]|null} request.actors  Actors to choose from, or null when the recipients are already known.
+ * @param {string[]} [request.recipients]  Names of the recipients already known (shown, not editable).
  * @returns {Promise<{damages: DamageInput[], ignore: boolean, actors: Actor[]|null}|null>}
  *   The chosen actors (null when no list was shown), or null if canceled.
  */
-export async function promptLooseDamage({ parts, healing, actors }) {
+export async function promptLooseDamage({ parts, healing, actors, recipients=[] }) {
   const content = await renderTemplate(TEMPLATES.looseDamage, {
     healing,
     hint: loc(healing ? "Loose.HealingHint" : "Loose.DamageHint"),
     required: loc(healing ? "Heal.Required" : "Damage.Required"),
     parts: partFields(parts, "parts"),
-    actors: actors?.map((actor, i) => ({ name: actor.name, img: actor.img, checkName: `actors.${i}` })) ?? null
+    actors: actors?.map((actor, i) => ({ name: actor.name, img: actor.img, checkName: `actors.${i}` })) ?? null,
+    recipients: recipients.join(", ")
   });
   const validate = form => {
     let valid = validateDamageGroups(form);

@@ -1,5 +1,6 @@
 <div class="onsite-dialog">
   <p class="onsite-hint">{{hint}}</p>
+  {{#if recipients}}<p class="onsite-hint"><strong>{{localize "ONSITE.Loose.Recipients"}}:</strong> {{recipients}}</p>{{/if}}
   <fieldset class="onsite-target-block" data-onsite-damage-group>
     {{#each parts}}
     <div class="onsite-part">
