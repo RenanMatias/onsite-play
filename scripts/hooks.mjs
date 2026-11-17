@@ -89,12 +89,16 @@ function onPreRollAttack(config) {
  * A chat-card "Damage" / "Healing" button was clicked for a PC. Save activities run the save flow, heal
  * activities the healing flow; attack and damage activities run the damage-only flow (the GM already knows
  * who was hit). Heal activities roll through Activity#rollDamage too, so they arrive here. Rolls without an activity
- * come from journal links and are handled in enrichers.mjs.
+ * come from journal links and are handled in enrichers.mjs, except rolls that skip the dialog (fall damage).
  */
-function onPreRollDamage(config) {
+function onPreRollDamage(config, dialog, message) {
   const activity = config.subject;
-  // Journal damage / healing links (and /damage in chat) roll without an activity.
-  if ( !activity ) return handleLooseDamage(config) ? false : undefined;
+  if ( !activity ) {
+    // Journal damage / healing links (and /damage in chat) roll without an activity. Rolls built without a dialog
+    // (dnd5e fall damage, macros) keep dnd5e's behavior: they already know their targets.
+    if ( (dialog?.configure === false) || foundry.utils.getProperty(message ?? {}, "data.flags.dnd5e.context.fall") ) return;
+    return handleLooseDamage(config) ? false : undefined;
+  }
   if ( !shouldIntercept(activity) ) return;
   const mode = { save: "save", heal: "heal" }[activity.type] ?? "damage";
   requestFlow({ activity, mode, scaling: config.scaling });

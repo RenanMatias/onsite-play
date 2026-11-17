@@ -88,7 +88,8 @@ Roll links in journals and chat, such as `[[/skill athletics 12]]`, `[[/save dex
 
 - **Checks and saves** (ability, skill, tool, saving throw, concentration): with a token selected, the usual dialog opens for that character. With **no token selected**, one dialog lists **every player character**: type the total (and tick **Natural 20** or **Natural 1**) for each character making the test, and leave the others blank. Each one gets its normal dnd5e roll card with the Onsite Play summary line.
 - **Damage and healing** (`[[/damage]]`, `[[/heal]]`, and `/damage` typed in chat): type the total **once for everyone**, one number per damage type. It is applied to the selected tokens or, with no token selected, to the player characters you tick in the dialog, with each one's resistances, immunities and vulnerabilities. One summary card is posted, with **Undo**.
-- **Request** links (which post a roll request card to chat) work as before: the buttons on the card go through the normal Onsite Play flow.
+- **Request cards** (posted to chat with dnd5e's request button) work as before: a player who clicks a button rolls for their own character through the normal Onsite Play flow.
+- Rolls that dnd5e makes without asking, such as **fall damage**, keep dnd5e's default behavior.
 
 ### Chat summary and Undo
 
