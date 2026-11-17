@@ -168,7 +168,8 @@
       "Hint": "Type the final total (d20 + all modifiers) rolled at the table. On a natural 20 or natural 1, ticking it is enough: the total is optional.",
       "Total": "Total",
       "Nat20": "Natural 20",
-      "Nat1": "Natural 1"
+      "Nat1": "Natural 1",
+      "HintTotal": "Type the final total (d20 + all modifiers) rolled at the table."
     },
     "GroupTest": {
       "Title": "Roll at the table: {label}",

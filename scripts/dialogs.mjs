@@ -394,12 +394,14 @@ export async function promptInitiative(rows) {
  * @param {string} request.label          What is rolled, e.g. "Dexterity Saving Throw".
  * @param {number|null} request.target    DC, when known.
  * @param {string[]} request.formulas     One formula per roll (almost always one).
+ * @param {boolean} [request.natural=true]  Offer Natural 20 / Natural 1 (not for journal check / save links).
  * @returns {Promise<{total: number|null, nat: "none"|"nat20"|"nat1"}[]|null>}
  *   One result per roll (the total may be blank for a natural 20 / 1), or null if canceled.
  */
-export async function promptD20Test(actor, { label, target, formulas }) {
+export async function promptD20Test(actor, { label, target, formulas, natural=true }) {
   const content = await renderTemplate(TEMPLATES.d20Test, {
-    hint: loc("Check.Hint"),
+    hint: loc(natural ? "Check.Hint" : "Check.HintTotal"),
+    natural,
     rows: formulas.map((formula, i) => ({
       label,
       img: actor.img,
@@ -416,11 +418,11 @@ export async function promptD20Test(actor, { label, target, formulas }) {
     content,
     okLabel: loc("Buttons.Apply"),
     width: 480,
-    // Each roll needs a total, unless Natural 20 / Natural 1 is ticked.
+    // Each roll needs a total, unless Natural 20 / Natural 1 is offered and ticked.
     validate: form => formulas.every((formula, i) => {
       const total = form.querySelector(`[name="rows.${i}.total"]`)?.value;
       const nat = form.querySelector(`[name="rows.${i}.nat"]:checked`)?.value;
-      return (toNumber(total) !== null) || ["nat20", "nat1"].includes(nat);
+      return (toNumber(total) !== null) || (natural && ["nat20", "nat1"].includes(nat));
     })
   });
   if ( !data ) return null;
@@ -429,7 +431,7 @@ export async function promptD20Test(actor, { label, target, formulas }) {
     const total = toNumber(row.total);
     return {
       total: total === null ? null : Math.floor(total),
-      nat: ["nat20", "nat1"].includes(row.nat) ? row.nat : "none"
+      nat: (natural && ["nat20", "nat1"].includes(row.nat)) ? row.nat : "none"
     };
   });
 }
@@ -440,13 +442,15 @@ export async function promptD20Test(actor, { label, target, formulas }) {
  * @param {string} request.label                              What is rolled, e.g. "Athletics".
  * @param {number|null} request.dc
  * @param {{actor: Actor, bonus: number|null}[]} request.actors
+ * @param {boolean} [request.natural=true]  Offer Natural 20 / Natural 1.
  * @returns {Promise<{actor: Actor, total: number|null, nat: "none"|"nat20"|"nat1"}[]|null>}
  *   The filled rows only, or null if canceled.
  */
-export async function promptGroupTest({ label, dc, actors }) {
+export async function promptGroupTest({ label, dc, actors, natural=true }) {
   const content = await renderTemplate(TEMPLATES.groupTest, {
     hint: loc("GroupTest.Hint"),
     dc,
+    natural,
     rows: actors.map(({ actor, bonus }, i) => ({
       name: actor.name,
       img: actor.img,
@@ -456,7 +460,7 @@ export async function promptGroupTest({ label, dc, actors }) {
       natName: `rows.${i}.nat`
     }))
   });
-  const isFilled = (total, nat) => (toNumber(total) !== null) || ["nat20", "nat1"].includes(nat);
+  const isFilled = (total, nat) => (toNumber(total) !== null) || (natural && ["nat20", "nat1"].includes(nat));
   const data = await waitForm({
     title: loc("GroupTest.Title", { label }),
     icon: "fa-solid fa-dice-d20",
@@ -476,7 +480,7 @@ export async function promptGroupTest({ label, dc, actors }) {
     return [{
       actor,
       total: total === null ? null : Math.floor(total),
-      nat: ["nat20", "nat1"].includes(row.nat) ? row.nat : "none"
+      nat: (natural && ["nat20", "nat1"].includes(row.nat)) ? row.nat : "none"
     }];
   });
 }

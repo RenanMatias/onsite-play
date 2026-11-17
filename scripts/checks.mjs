@@ -18,6 +18,7 @@ import { MODULE_ID, loc } from "./constants.mjs";
 import { getSetting } from "./settings.mjs";
 import { isGuidedActor } from "./hooks.mjs";
 import { promptD20Test } from "./dialogs.mjs";
+import { linkTestType, offersNatural } from "./enrichers.mjs";
 
 const { NumericTerm, OperatorTerm } = foundry.dice.terms;
 
@@ -87,6 +88,9 @@ class ManualRollConfiguration {
         target: Number.isFinite(rolls[0].options.target) ? rolls[0].options.target : null,
         formulas: rolls.map(roll => roll.formula)
       };
+      // Rolled from a journal link (with a token selected): the same choice as the group dialog.
+      const linkType = linkTestType(config.event);
+      if ( linkType ) request.natural = offersNatural(linkType);
       input = game.user.isGM ? await promptD20Test(actor, request) : await askGM(actor, request);
     }
     if ( !input ) return [];
@@ -179,7 +183,7 @@ async function askGM(actor, request) {
 /**
  * Query handler (registered in CONFIG.queries) run on the active GM's client. Unlike the flows, the player's
  * roll waits for the answer, so this resolves only once the GM closes the dialog.
- * @param {{actorUuid: string, label: string, target: number|null, formulas: string[]}} data
+ * @param {{actorUuid: string, label: string, target: number|null, formulas: string[], natural?: boolean}} data
  * @param {{user: User}} context
  * @returns {Promise<object[]|null>}
  */
@@ -193,6 +197,7 @@ async function handleD20TestQuery(data, { user }) {
   return promptD20Test(actor, {
     label: String(data.label ?? actor.name),
     target: Number.isFinite(data.target) ? data.target : null,
-    formulas
+    formulas,
+    natural: data.natural !== false
   });
 }

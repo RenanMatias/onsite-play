@@ -71,6 +71,25 @@ function readTestLink(link) {
 }
 
 /**
+ * Journal check / save links only ask for the total; concentration links still offer Natural 20 / Natural 1.
+ * @param {string} type  Link type.
+ * @returns {boolean}
+ */
+export function offersNatural(type) {
+  return type === "concentration";
+}
+
+/**
+ * The type of the check / save link that triggered a roll, if any (dnd5e passes the click event in the config).
+ * @param {Event} [event]
+ * @returns {string|null}
+ */
+export function linkTestType(event) {
+  const link = event?.target?.closest?.('[data-action="roll"]');
+  return link ? (readTestLink(link)?.type ?? null) : null;
+}
+
+/**
  * Capture-phase click handler: take over check / save links that dnd5e would reject for lack of an actor.
  * @param {PointerEvent} event
  */
@@ -105,7 +124,8 @@ async function runGroupTest(test) {
     const results = await promptGroupTest({
       label: test.label,
       dc: test.dc,
-      actors: actors.map(actor => ({ actor, bonus: testBonus(actor, test) }))
+      actors: actors.map(actor => ({ actor, bonus: testBonus(actor, test) })),
+      natural: offersNatural(test.type)
     });
     if ( !results?.length ) return;
     await rollTest(test, results);

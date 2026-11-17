@@ -168,7 +168,8 @@
       "Hint": "Digite o total final (d20 + todos os modificadores) rolado na mesa. Em um 20 natural ou 1 natural, basta marcar: o total é opcional.",
       "Total": "Total",
       "Nat20": "20 natural",
-      "Nat1": "1 natural"
+      "Nat1": "1 natural",
+      "HintTotal": "Digite o total final (d20 + todos os modificadores) rolado na mesa."
     },
     "GroupTest": {
       "Title": "Rolagem na mesa: {label}",
