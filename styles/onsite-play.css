@@ -121,6 +121,23 @@
   padding: 0 0.25rem;
 }
 
+/* Journal damage links: "Who is affected" list. Each row is a single checkbox label spanning the dialog width. */
+.onsite-play [data-onsite-recipients] .onsite-target {
+  display: block;
+  padding: 0;
+}
+
+.onsite-play [data-onsite-recipients] .onsite-checkbox {
+  display: flex;
+  margin: 10px;
+  gap: 0.5rem;
+}
+
+.onsite-play [data-onsite-recipients] .onsite-name {
+  flex: 1;
+  min-width: 0;
+}
+
 .onsite-play .onsite-part {
   display: flex;
   align-items: center;
